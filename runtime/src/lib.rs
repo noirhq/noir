@@ -28,15 +28,19 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 mod precompiles;
 
-use codec::{Decode, Encode};
+use codec::{Decode, Encode, MaxEncodedLen};
 use fp_rpc::TransactionStatus;
 use frame_support::{
 	construct_runtime, parameter_types,
-	traits::{ConstU128, ConstU32, ConstU8, FindAuthor, KeyOwnerProofSystem, OnTimestampSet},
+	traits::{
+		ConstU128, ConstU32, ConstU8, Everything, FindAuthor, InstanceFilter, KeyOwnerProofSystem,
+		OnTimestampSet,
+	},
 	weights::{
 		constants::{RocksDbWeight, WEIGHT_REF_TIME_PER_SECOND},
 		IdentityFee, Weight,
 	},
+	RuntimeDebug,
 };
 pub use noir_core_primitives::{AccountId, Balance, BlockNumber, Hash, Index, Signature};
 use np_runtime::AccountName;
@@ -49,6 +53,7 @@ use pallet_grandpa::{
 };
 use pallet_transaction_payment::{ConstFeeMultiplier, CurrencyAdapter, Multiplier};
 use precompiles::FrontierPrecompiles;
+use scale_info::TypeInfo;
 use sp_api::impl_runtime_apis;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_core::{
@@ -213,7 +218,7 @@ parameter_types! {
 
 impl frame_system::Config for Runtime {
 	/// The basic call filter to use in dispatchable.
-	type BaseCallFilter = frame_support::traits::Everything;
+	type BaseCallFilter = Everything;
 	/// Block & extrinsics weights: base values and limits.
 	type BlockWeights = BlockWeights;
 	/// The maximum length of a block (in bytes).
@@ -402,6 +407,80 @@ impl pallet_grandpa::Config for Runtime {
 	type MaxAuthorities = ConstU32<32>;
 }
 
+parameter_types! {
+	/// One storage item; key size 32, value size 8; .
+	pub const ProxyDepositBase: Balance = deposit(1, 8);
+	/// Additional storage item size of 33 bytes (32 bytes AccountId + 1 byte sizeof(ProxyType)).
+	pub const ProxyDepositFactor: Balance = deposit(0, 33);
+	pub const AnnouncementDepositBase: Balance = deposit(1, 8);
+	/// Additional storage item size of 66 bytes:
+	/// - 32 bytes AccountId
+	/// - 32 bytes Hasher (Blake2256)
+	/// - 4 bytes BlockNumber (u32)
+	pub const AnnouncementDepositFactor: Balance = deposit(0, 66);
+}
+
+/// The type used to represent the kinds of proxying allowed.
+#[derive(
+	Copy,
+	Clone,
+	Eq,
+	PartialEq,
+	Ord,
+	PartialOrd,
+	Encode,
+	Decode,
+	RuntimeDebug,
+	MaxEncodedLen,
+	TypeInfo,
+)]
+pub enum ProxyType {
+	Any,
+	NonTransfer,
+}
+impl Default for ProxyType {
+	fn default() -> Self {
+		Self::Any
+	}
+}
+impl InstanceFilter<RuntimeCall> for ProxyType {
+	fn filter(&self, c: &RuntimeCall) -> bool {
+		match self {
+			ProxyType::Any => true,
+			ProxyType::NonTransfer => !matches!(c, RuntimeCall::Balances(..)),
+		}
+	}
+	fn is_superset(&self, o: &Self) -> bool {
+		match (self, o) {
+			(x, y) if x == y => true,
+			(ProxyType::Any, _) => true,
+			(_, ProxyType::Any) => false,
+			_ => false,
+		}
+	}
+}
+
+impl pallet_proxy::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type RuntimeCall = RuntimeCall;
+	type Currency = Balances;
+	/// A kind of proxy; specified with the proxy and passed in to the `IsProxyable` fitler.
+	type ProxyType = ProxyType;
+	/// The base amount of currency needed to reserve for creating a proxy.
+	type ProxyDepositBase = ProxyDepositBase;
+	/// The amount of currency needed per proxy added.
+	type ProxyDepositFactor = ProxyDepositFactor;
+	type MaxProxies = ConstU32<32>;
+	type WeightInfo = pallet_proxy::weights::SubstrateWeight<Runtime>;
+	type MaxPending = ConstU32<32>;
+	/// The type of hash used for hashing the call.
+	type CallHasher = BlakeTwo256;
+	/// The base amount of currency needed to reserve for creating an announcement.
+	type AnnouncementDepositBase = AnnouncementDepositBase;
+	/// The amount of currency needed per announcement made.
+	type AnnouncementDepositFactor = AnnouncementDepositFactor;
+}
+
 impl pallet_sudo::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeCall = RuntimeCall;
@@ -479,6 +558,7 @@ construct_runtime!(
 		EVM: pallet_evm,
 		EVMChainId: pallet_evm_chain_id,
 		Grandpa: pallet_grandpa,
+		Proxy: pallet_proxy,
 		Sudo: pallet_sudo,
 		System: frame_system,
 		Timestamp: pallet_timestamp,
