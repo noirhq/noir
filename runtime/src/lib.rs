@@ -32,12 +32,16 @@ use codec::{Decode, Encode};
 use fp_rpc::TransactionStatus;
 use frame_support::{
 	construct_runtime, parameter_types,
-	traits::{ConstU128, ConstU32, ConstU8, FindAuthor, KeyOwnerProofSystem, OnTimestampSet},
+	traits::{
+		AsEnsureOriginWithArg, ConstU128, ConstU32, ConstU8, FindAuthor, KeyOwnerProofSystem,
+		OnTimestampSet,
+	},
 	weights::{
 		constants::{RocksDbWeight, WEIGHT_REF_TIME_PER_SECOND},
 		IdentityFee, Weight,
 	},
 };
+use frame_system::{EnsureRoot, EnsureSigned};
 pub use noir_core_primitives::{AccountId, Balance, BlockNumber, Hash, Index, Signature};
 use np_runtime::AccountName;
 use pallet_ethereum::{Call::transact, Transaction as EthereumTransaction};
@@ -262,6 +266,34 @@ impl frame_system::Config for Runtime {
 	type MaxConsumers = frame_support::traits::ConstU32<16>;
 }
 
+parameter_types! {
+	pub const AssetDeposit: Balance = 100 * UNIT;
+	pub const ApprovalDeposit: Balance = 1 * UNIT;
+	pub const StringLimit: u32 = 50;
+	pub const MetadataDepositBase: Balance = 10 * UNIT;
+	pub const MetadataDepositPerByte: Balance = 1 * UNIT;
+}
+
+impl pallet_assets::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type Balance = u128;
+	type AssetId = u32;
+	type AssetIdParameter = codec::Compact<u32>;
+	type Currency = Balances;
+	type CreateOrigin = AsEnsureOriginWithArg<EnsureSigned<AccountId>>;
+	type ForceOrigin = EnsureRoot<AccountId>;
+	type AssetDeposit = AssetDeposit;
+	type AssetAccountDeposit = ConstU128<UNIT>;
+	type MetadataDepositBase = MetadataDepositBase;
+	type MetadataDepositPerByte = MetadataDepositPerByte;
+	type ApprovalDeposit = ApprovalDeposit;
+	type StringLimit = StringLimit;
+	type Freezer = ();
+	type Extra = ();
+	type WeightInfo = pallet_assets::weights::SubstrateWeight<Runtime>;
+	type RemoveItemsLimit = ConstU32<1000>;
+}
+
 impl pallet_aura::Config for Runtime {
 	/// The identifier type for an authority.
 	type AuthorityId = AuraId;
@@ -471,6 +503,7 @@ construct_runtime!(
 		NodeBlock = noir_core_primitives::Block,
 		UncheckedExtrinsic = UncheckedExtrinsic,
 	{
+		Assets: pallet_assets,
 		Aura: pallet_aura,
 		Balances: pallet_balances,
 		BaseFee: pallet_base_fee,
