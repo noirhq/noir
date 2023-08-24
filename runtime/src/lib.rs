@@ -35,7 +35,7 @@ use fp_rpc::TransactionStatus;
 use frame_support::{
 	construct_runtime, parameter_types,
 	traits::{
-		tokens::fungible, ConstU128, ConstU32, ConstU64, ConstU8, FindAuthor, KeyOwnerProofSystem,
+		tokens::{fungible, Fortitude, Preservation}, ConstBool, ConstU128, ConstU32, ConstU64, ConstU8, FindAuthor, KeyOwnerProofSystem,
 		OnTimestampSet,
 	},
 	weights::{
@@ -348,15 +348,11 @@ impl frame_system::Config for Runtime {
 	/// The lookup mechanism to get account ID from whatever is passed in dispatchers.
 	type Lookup = Alias;
 	/// The index type for storing how many extrinsics an account has signed.
-	type Index = Index;
-	/// The index type for blocks.
-	type BlockNumber = BlockNumber;
+	type Nonce = Index;
 	/// The type for hashing blocks and tries.
 	type Hash = Hash;
 	/// The hashing algorithm used.
 	type Hashing = BlakeTwo256;
-	/// The header type.
-	type Header = generic::Header<BlockNumber, BlakeTwo256>;
 	/// The ubiquitous event type.
 	type RuntimeEvent = RuntimeEvent;
 	/// The ubiquitous origin type.
@@ -539,23 +535,14 @@ impl pallet_evm_chain_id::Config for Runtime {}
 
 impl pallet_grandpa::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
-	/// A system for proving ownership of keys, i.e. that a given key was part
-	/// of a validator set, needed for validating equivocation reports.
-	type KeyOwnerProofSystem = ();
 	/// The proof of key ownership, used for validating equivocation reports
 	/// The proof must include the session index and validator count of the
 	/// session at which the equivocation occurred.
-	type KeyOwnerProof =
-		<Self::KeyOwnerProofSystem as KeyOwnerProofSystem<(KeyTypeId, GrandpaId)>>::Proof;
-	/// The identification of a key owner, used when reporting equivocations.
-	type KeyOwnerIdentification = <Self::KeyOwnerProofSystem as KeyOwnerProofSystem<(
-		KeyTypeId,
-		GrandpaId,
-	)>>::IdentificationTuple;
+	type KeyOwnerProof = sp_core::Void;
 	/// The equivocation handling subsystem, defines methods to report an
 	/// offence (after the equivocation has been validated) and for submitting a
 	/// transaction to report an equivocation (from an offchain context).
-	type HandleEquivocation = ();
+	type EquivocationReportSystem = ();
 	type WeightInfo = ();
 	/// Max Authorities in use.
 	type MaxAuthorities = ConstU32<32>;
@@ -705,34 +692,34 @@ impl Runtime {
 	}
 
 	fn migrate_evm_account(address: &H160, who: &AccountId) -> Result<Balance, ()> {
-		use fungible::{Inspect, Transfer};
+		use fungible::{Inspect, Mutate};
 		let interim_account =
 			<Runtime as pallet_evm::Config>::AddressMapping::into_account_id(*address);
 		let balance =
 			pallet_balances::Pallet::<Runtime>::reducible_balance(&interim_account, false);
-		<pallet_balances::Pallet<Runtime> as Transfer<AccountId>>::transfer(
+		<pallet_balances::Pallet<Runtime> as Mutate<AccountId>>::transfer(
 			&interim_account,
 			who,
 			balance,
-			false,
+			Preservation::Expendable
 		)
 		.map_err(|_| ())
 		.map(|_| balance)
 	}
 
 	fn migrate_cosm_account(address: &H160, who: &AccountId) -> Result<Balance, ()> {
-		use fungible::{Inspect, Transfer};
+		use fungible::{Inspect, Mutate};
 		use pallet_cosmos::AddressMapping;
 
 		let interim_account =
 			<Runtime as pallet_cosmos::Config>::AddressMapping::into_account_id(*address);
 		let balance =
 			pallet_balances::Pallet::<Runtime>::reducible_balance(&interim_account, false);
-		<pallet_balances::Pallet<Runtime> as Transfer<AccountId>>::transfer(
+		<pallet_balances::Pallet<Runtime> as Mutate<AccountId>>::transfer(
 			&interim_account,
 			who,
 			balance,
-			false,
+			Preservation::Expendable
 		)
 		.map_err(|_| ())
 		.map(|_| balance)

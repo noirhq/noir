@@ -21,15 +21,12 @@ use np_crypto::{ecdsa::EcdsaExt, p256};
 use parity_scale_codec::{Decode, Encode, EncodeLike, Error, Input, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_core::{ecdsa, ed25519, sr25519, H160, H256};
-use sp_std::vec::Vec;
+use sp_std::prelude::*;
 
-#[cfg(feature = "std")]
+#[cfg(feature = "serde")]
 use base64ct::{Base64UrlUnpadded as Base64, Encoding};
-#[cfg(feature = "std")]
-use serde::{
-	de::{Deserialize, Deserializer, Error as DeError, Visitor},
-	ser::{Serialize, Serializer},
-};
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 
 /// Multicodec codes encoded with unsigned varint.
 #[allow(dead_code)]
@@ -66,10 +63,12 @@ pub enum UniversalAddressKind {
 
 /// A universal representation of a public key encoded with multicodec.
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, TypeInfo)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", derive(Hash))]
 pub struct UniversalAddress(pub Vec<u8>);
 
-#[cfg(feature = "std")]
+/*
+#[cfg(feature = "serde")]
 impl Serialize for UniversalAddress {
 	fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
 	where
@@ -80,7 +79,7 @@ impl Serialize for UniversalAddress {
 	}
 }
 
-#[cfg(feature = "std")]
+#[cfg(feature = "serde")]
 impl<'de> Deserialize<'de> for UniversalAddress {
 	fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
 	where
@@ -109,6 +108,7 @@ impl<'de> Deserialize<'de> for UniversalAddress {
 		deserializer.deserialize_str(UniversalAddressVisitor)
 	}
 }
+*/
 
 impl UniversalAddress {
 	/// Get the type of public key that contains.

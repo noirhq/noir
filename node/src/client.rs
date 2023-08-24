@@ -74,7 +74,7 @@ pub trait RuntimeApiCollection:
 	+ EthCompatRuntimeApiCollection
 	+ hp_rpc::ConvertTxRuntimeApi<Block>
 	+ sp_consensus_aura::AuraApi<Block, AuraId>
-	+ sp_finality_grandpa::GrandpaApi<Block>
+	+ sp_consensus_grandpa::GrandpaApi<Block>
 	+ frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId, Index>
 	+ pallet_transaction_payment_rpc_runtime_api::TransactionPaymentApi<Block, Balance>
 where
@@ -88,7 +88,7 @@ where
 		+ EthCompatRuntimeApiCollection
 		+ hp_rpc::ConvertTxRuntimeApi<Block>
 		+ sp_consensus_aura::AuraApi<Block, AuraId>
-		+ sp_finality_grandpa::GrandpaApi<Block>
+		+ sp_consensus_grandpa::GrandpaApi<Block>
 		+ frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId, Index>
 		+ pallet_transaction_payment_rpc_runtime_api::TransactionPaymentApi<Block, Balance>,
 	<Self as sp_api::ApiExt<Block>>::StateBackend: sp_api::StateBackend<BlakeTwo256>,

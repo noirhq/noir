@@ -22,7 +22,7 @@ use sc_service::ChainType;
 use serde::{Deserialize, Serialize};
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_core::{sr25519, storage::Storage, Pair, Public, H160, U256};
-use sp_finality_grandpa::AuthorityId as GrandpaId;
+use sp_consensus_grandpa::AuthorityId as GrandpaId;
 use sp_runtime::traits::{IdentifyAccount, Verify};
 use sp_state_machine::BasicExternalities;
 use std::{collections::BTreeMap, str::FromStr};
