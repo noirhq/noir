@@ -37,8 +37,7 @@ use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 #[cfg(feature = "std")]
 use sp_core::crypto::Ss58Codec;
 use sp_core::crypto::{
-	ByteArray, CryptoType, CryptoTypeId, Derive, Public as TraitPublic,
-	UncheckedFrom,
+	ByteArray, CryptoType, CryptoTypeId, Derive, Public as TraitPublic, UncheckedFrom,
 };
 #[cfg(feature = "full_crypto")]
 use sp_core::{
@@ -334,21 +333,22 @@ impl Signature {
 	}
 	*/
 
+	/// Recover the public key from this signature and a message.
 	#[cfg(feature = "full_crypto")]
 	pub fn recover<M: AsRef<[u8]>>(&self, message: M) -> Option<Public> {
 		self.recover_prehashed(&blake2_256(message.as_ref()))
 	}
 
+	/// Recover the public key from this signature and a pre-hashed message.
 	#[cfg(feature = "full_crypto")]
 	pub fn recover_prehashed(&self, message: &[u8; 32]) -> Option<Public> {
 		let recid = RecoveryId::from_byte(self.0[64])?;
 		let sig = EcdsaSignature::from_bytes(self.0[..64].into()).ok()?;
 
-		VerifyingKey::recover_from_prehash(
-			&message[..],
-			&sig,
-			recid
-		).ok().map(|pubkey| Public::from_slice(pubkey.to_encoded_point(true).as_bytes()).ok()).flatten()
+		VerifyingKey::recover_from_prehash(&message[..], &sig, recid)
+			.ok()
+			.map(|pubkey| Public::from_slice(pubkey.to_encoded_point(true).as_bytes()).ok())
+			.flatten()
 	}
 }
 
@@ -721,9 +721,8 @@ mod tests {
 		// `msg` shouldn't be mangled
 		let msg = [0u8; 32];
 		let sig1 = pair.sign_prehashed(&msg);
-		let sig2: Signature = {
-			Signature::from(pair.secret.sign_prehash_recoverable(&msg).unwrap())
-		};
+		let sig2: Signature =
+			{ Signature::from(pair.secret.sign_prehash_recoverable(&msg).unwrap()) };
 		assert_eq!(sig1, sig2);
 
 		// signature is actually different
