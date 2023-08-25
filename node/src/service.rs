@@ -35,13 +35,14 @@ use futures::{channel::mpsc, prelude::*};
 use noir_core_primitives::Block;
 use noir_runtime::{Hash, TransactionConverter};
 use prometheus_endpoint::Registry;
-use sc_client_api::{BlockBackend, StateBackendFor};
+use sc_client_api::{Backend, BlockBackend, StateBackendFor};
 use sc_consensus::BasicQueue;
 use sc_executor::{NativeElseWasmExecutor, NativeExecutionDispatch};
 use sc_service::{
 	error::Error as ServiceError, Configuration, PartialComponents, TaskManager, WarpSyncParams,
 };
 use sc_telemetry::{Telemetry, TelemetryHandle, TelemetryWorker};
+use sc_transaction_pool_api::OffchainTransactionPoolFactory;
 use sp_api::{ConstructRuntimeApi, TransactionFor};
 use sp_consensus_aura::sr25519::AuthorityPair as AuraPair;
 use sp_core::U256;
@@ -72,7 +73,7 @@ pub fn new_partial<RuntimeApi, Executor, BuildImportQueue>(
 			Option<Telemetry>,
 			BoxBlockImport<FullClient<RuntimeApi, Executor>>,
 			GrandpaLinkHalf<FullClient<RuntimeApi, Executor>>,
-			Arc<FrontierBackend>,
+			FrontierBackend,
 		),
 	>,
 	ServiceError,
@@ -90,7 +91,7 @@ where
 		&TaskManager,
 		Option<TelemetryHandle>,
 		GrandpaBlockImport<FullClient<RuntimeApi, Executor>>,
-		Arc<FrontierBackend>,
+		FrontierBackend,
 	) -> Result<
 		(
 			BasicImportQueue<FullClient<RuntimeApi, Executor>>,
@@ -139,7 +140,7 @@ where
 	)?;
 
 	let frontier_backend =
-		Arc::new(FrontierBackend::open(client.clone(), &config.database, &db_config_dir(config))?);
+		FrontierBackend::open(client.clone(), &config.database, &db_config_dir(config))?;
 	let (import_queue, block_import) = build_import_queue(
 		client.clone(),
 		config,
@@ -178,7 +179,6 @@ pub fn build_aura_grandpa_import_queue<RuntimeApi, Executor>(
 	task_manager: &TaskManager,
 	telemetry: Option<TelemetryHandle>,
 	grandpa_block_import: GrandpaBlockImport<FullClient<RuntimeApi, Executor>>,
-	frontier_backend: Arc<FrontierBackend>,
 ) -> Result<
 	(
 		BasicImportQueue<FullClient<RuntimeApi, Executor>>,
@@ -194,7 +194,7 @@ where
 	Executor: NativeExecutionDispatch + 'static,
 {
 	let frontier_block_import =
-		FrontierBlockImport::new(grandpa_block_import.clone(), client.clone(), frontier_backend);
+		FrontierBlockImport::new(grandpa_block_import.clone(), client.clone());
 
 	let slot_duration = sc_consensus_aura::slot_duration(&*client)?;
 	let target_gas_price = eth_config.target_gas_price;
@@ -235,7 +235,6 @@ pub fn build_manual_seal_import_queue<RuntimeApi, Executor>(
 	task_manager: &TaskManager,
 	_telemetry: Option<TelemetryHandle>,
 	_grandpa_block_import: GrandpaBlockImport<FullClient<RuntimeApi, Executor>>,
-	frontier_backend: Arc<FrontierBackend>,
 ) -> Result<
 	(
 		BasicImportQueue<FullClient<RuntimeApi, Executor>>,
@@ -250,7 +249,7 @@ where
 		RuntimeApiCollection<StateBackend = StateBackendFor<FullBackend, Block>>,
 	Executor: NativeExecutionDispatch + 'static,
 {
-	let frontier_block_import = FrontierBlockImport::new(client.clone(), client, frontier_backend);
+	let frontier_block_import = FrontierBlockImport::new(client.clone(), client);
 	Ok((
 		sc_consensus_manual_seal::import_queue(
 			Box::new(frontier_block_import.clone()),
@@ -405,7 +404,7 @@ where
 		Vec::default(),
 	));
 
-	let (network, system_rpc_tx, tx_handler_controller, network_starter) =
+	let (network, system_rpc_tx, tx_handler_controller, network_starter, sync_service) =
 		sc_service::build_network(sc_service::BuildNetworkParams {
 			config: &config,
 			client: client.clone(),
@@ -421,11 +420,23 @@ where
 		})?;
 
 	if config.offchain_worker.enabled {
-		sc_service::build_offchain_workers(
-			&config,
-			task_manager.spawn_handle(),
-			client.clone(),
-			network.clone(),
+		task_manager.spawn_handle().spawn(
+			"offchain-workers-runner",
+			"offchain-worker",
+			sc_offchain::OffchainWorkers::new(sc_offchain::OffchainWorkerOptions {
+				runtime_api_provider: client.clone(),
+				is_validator: config.role.is_authority(),
+				keystore: Some(keystore_container.keystore()),
+				offchain_db: backend.offchain_storage(),
+				transaction_pool: Some(OffchainTransactionPoolFactory::new(
+					transaction_pool.clone(),
+				)),
+				network_provider: network.clone(),
+				enable_http_requests: true,
+				custom_extensions: |_| vec![],
+			})
+			.run(client.clone(), task_manager.spawn_handle())
+			.boxed(),
 		);
 	}
 
@@ -489,12 +500,13 @@ where
 		client: client.clone(),
 		backend: backend.clone(),
 		task_manager: &mut task_manager,
-		keystore: keystore_container.sync_keystore(),
+		keystore: keystore_container.keystore(),
 		transaction_pool: transaction_pool.clone(),
 		rpc_builder,
 		network: network.clone(),
 		system_rpc_tx,
 		tx_handler_controller,
+		sync_service: sync_service.clone(),
 		telemetry: telemetry.as_mut(),
 	})?;
 
@@ -557,12 +569,12 @@ where
 				select_chain,
 				block_import,
 				proposer_factory,
-				sync_oracle: network.clone(),
-				justification_sync_link: network.clone(),
+				sync_oracle: sync_service.clone(),
+				justification_sync_link: sync_service.clone(),
 				create_inherent_data_providers,
 				force_authoring,
 				backoff_authoring_blocks: Option::<()>::None,
-				keystore: keystore_container.sync_keystore(),
+				keystore: keystore_container.keystore(),
 				block_proposal_slot_portion: sc_consensus_aura::SlotProportion::new(2f32 / 3f32),
 				max_block_proposal_slot_portion: None,
 				telemetry: telemetry.as_ref().map(|x| x.handle()),
@@ -580,7 +592,7 @@ where
 		// if the node isn't actively participating in consensus then it doesn't
 		// need a keystore, regardless of which protocol we use below.
 		let keystore =
-			if role.is_authority() { Some(keystore_container.sync_keystore()) } else { None };
+			if role.is_authority() { Some(keystore_container.keystore()) } else { None };
 
 		let grandpa_config = sc_consensus_grandpa::Config {
 			// FIXME #1578 make this available through chainspec
@@ -605,10 +617,12 @@ where
 				config: grandpa_config,
 				link: grandpa_link,
 				network,
+				sync: sync_service,
 				voting_rule: sc_consensus_grandpa::VotingRulesBuilder::default().build(),
 				prometheus_registry,
 				shared_voter_state: sc_consensus_grandpa::SharedVoterState::empty(),
 				telemetry: telemetry.as_ref().map(|x| x.handle()),
+				offchain_tx_pool_factory: OffchainTransactionPoolFactory::new(transaction_pool),
 			})?;
 
 		// the GRANDPA voter task is considered infallible, i.e.
@@ -639,7 +653,7 @@ pub fn new_chain_ops(
 		Arc<FullBackend>,
 		BasicQueue<Block, PrefixedMemoryDB<BlakeTwo256>>,
 		TaskManager,
-		Arc<FrontierBackend>,
+		FrontierBackend,
 	),
 	ServiceError,
 > {

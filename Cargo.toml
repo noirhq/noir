@@ -4,11 +4,11 @@ resolver = "2"
 members = [
 	"core-primitives",
 	"frame/alias",
-	"node",
+	# "node",
 	"primitives/crypto",
 	"primitives/io",
 	"primitives/runtime",
-	"runtime",
+	# "runtime",
 ]
 
 [workspace.package]
@@ -74,6 +74,8 @@ sc-consensus-grandpa = { git = "https://github.com/paritytech/substrate", branch
 sc-executor = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v1.0.0", default-features = false }
 sc-keystore = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v1.0.0", default-features = false }
 sc-network = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v1.0.0", default-features = false }
+sc-network-sync = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v1.0.0", default-features = false }
+sc-offchain = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v1.0.0", default-features = false }
 sc-rpc = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v1.0.0", default-features = false }
 sc-rpc-api = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v1.0.0", default-features = false }
 sc-service = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v1.0.0", default-features = false }

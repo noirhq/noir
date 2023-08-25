@@ -18,7 +18,7 @@
 
 use fc_db::Backend as FrontierBackend;
 pub use fc_rpc::{
-	EthBlockDataCacheTask, OverrideHandle, RuntimeApiStorageOverride, SchemaV1Override,
+	EthBlockDataCacheTask, EthConfig, OverrideHandle, RuntimeApiStorageOverride, SchemaV1Override,
 	SchemaV2Override, SchemaV3Override, StorageOverride,
 };
 pub use fc_rpc_core::types::{FeeHistoryCache, FeeHistoryCacheLimit, FilterPool};
@@ -29,6 +29,7 @@ use sc_client_api::{
 	client::BlockchainEvents,
 };
 use sc_network::NetworkService;
+use sc_network_sync::SyncingService;
 use sc_rpc::SubscriptionTaskExecutor;
 use sc_transaction_pool::{ChainApi, Pool};
 use sc_transaction_pool_api::TransactionPool;
@@ -36,7 +37,7 @@ use sp_api::ProvideRuntimeApi;
 use sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata};
 use sp_core::H256;
 use sp_runtime::traits::{BlakeTwo256, Block as BlockT, Header as HeaderT};
-use std::sync::Arc;
+use std::{collections::BTreeMap, sync::Arc};
 
 /// Extra dependencies for Ethereum compatibility.
 pub struct EthDeps<C, P, A: ChainApi, CT, B: BlockT> {
@@ -54,8 +55,10 @@ pub struct EthDeps<C, P, A: ChainApi, CT, B: BlockT> {
 	pub enable_dev_signer: bool,
 	/// Network service
 	pub network: Arc<NetworkService<B, B::Hash>>,
+	/// Chain syncing service
+	pub sync: Arc<SyncingService<B>>,
 	/// Frontier Backend.
-	pub frontier_backend: Arc<FrontierBackend<B>>,
+	pub frontier_backend: Arc<dyn fc_db::BackendReader<B> + Send + Sync>,
 	/// Ethereum data access overrides.
 	pub overrides: Arc<OverrideHandle<B>>,
 	/// Cache for Ethereum block data.
@@ -71,6 +74,8 @@ pub struct EthDeps<C, P, A: ChainApi, CT, B: BlockT> {
 	/// Maximum allowed gas limit will be ` block.gas_limit * execute_gas_limit_multiplier` when
 	/// using eth_call/eth_estimateGas.
 	pub execute_gas_limit_multiplier: u64,
+	/// Mandated parent hashes for a given block hash.
+	pub forced_parent_hashes: Option<BTreeMap<H256, H256>>,
 }
 
 impl<C, P, A: ChainApi, CT: Clone, B: BlockT> Clone for EthDeps<C, P, A, CT, B> {
@@ -83,6 +88,7 @@ impl<C, P, A: ChainApi, CT: Clone, B: BlockT> Clone for EthDeps<C, P, A, CT, B> 
 			is_authority: self.is_authority,
 			enable_dev_signer: self.enable_dev_signer,
 			network: self.network.clone(),
+			sync: self.sync.clone(),
 			frontier_backend: self.frontier_backend.clone(),
 			overrides: self.overrides.clone(),
 			block_data_cache: self.block_data_cache.clone(),
@@ -91,12 +97,13 @@ impl<C, P, A: ChainApi, CT: Clone, B: BlockT> Clone for EthDeps<C, P, A, CT, B> 
 			fee_history_cache: self.fee_history_cache.clone(),
 			fee_history_cache_limit: self.fee_history_cache_limit,
 			execute_gas_limit_multiplier: self.execute_gas_limit_multiplier,
+			forced_parent_hashes: self.forced_parent_hashes.clone(),
 		}
 	}
 }
 
 /// Instantiate Ethereum-compatible RPC extensions.
-pub fn create_eth<C, BE, P, A, CT, B>(
+pub fn create_eth<C, BE, P, A, CT, B, EC: EthConfig<B, C>>(
 	mut io: RpcModule<()>,
 	deps: EthDeps<C, P, A, CT, B>,
 	subscription_task_executor: SubscriptionTaskExecutor,
@@ -129,6 +136,7 @@ where
 		is_authority,
 		enable_dev_signer,
 		network,
+		sync,
 		frontier_backend,
 		overrides,
 		block_data_cache,
@@ -137,6 +145,7 @@ where
 		fee_history_cache,
 		fee_history_cache_limit,
 		execute_gas_limit_multiplier,
+		forced_parent_hashes,
 	} = deps;
 
 	let mut signers = Vec::new();
@@ -150,7 +159,7 @@ where
 			pool.clone(),
 			graph,
 			converter,
-			network.clone(),
+			sync.clone(),
 			vec![],
 			overrides.clone(),
 			frontier_backend.clone(),
@@ -160,6 +169,7 @@ where
 			fee_history_cache_limit,
 			execute_gas_limit_multiplier,
 		)
+		.replace_config::<EC>()
 		.into_rpc(),
 	)?;
 

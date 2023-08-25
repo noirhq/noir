@@ -16,7 +16,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use noir_runtime::{AccountId, EnableManualSeal, GenesisConfig, Signature, WASM_BINARY};
+use noir_runtime::{AccountId, EnableManualSeal, RuntimeGenesisConfig, Signature, WASM_BINARY};
 use sc_chain_spec::Properties;
 use sc_service::ChainType;
 use serde::{Deserialize, Serialize};
@@ -31,7 +31,7 @@ use std::{collections::BTreeMap, str::FromStr};
 // const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
 
 /// Specialized `ChainSpec`. This is a specialization of the general Substrate ChainSpec type.
-pub type ChainSpec = sc_service::GenericChainSpec<GenesisConfig>;
+pub type ChainSpec = sc_service::GenericChainSpec<RuntimeGenesisConfig>;
 /// Specialized `ChainSpec` for development.
 pub type DevChainSpec = sc_service::GenericChainSpec<DevGenesisExt>;
 
@@ -39,7 +39,7 @@ pub type DevChainSpec = sc_service::GenericChainSpec<DevGenesisExt>;
 #[derive(Serialize, Deserialize)]
 pub struct DevGenesisExt {
 	/// Genesis config.
-	genesis_config: GenesisConfig,
+	genesis_config: RuntimeGenesisConfig,
 	/// The flag that if enable manual-seal mode.
 	enable_manual_seal: Option<bool>,
 }
@@ -181,13 +181,13 @@ fn testnet_genesis(
 	endowed_accounts: Vec<AccountId>,
 	initial_authorities: Vec<(AuraId, GrandpaId)>,
 	chain_id: u64,
-) -> GenesisConfig {
+) -> RuntimeGenesisConfig {
 	use noir_runtime::{
 		AuraConfig, BalancesConfig, EVMChainIdConfig, EVMConfig, GrandpaConfig, SudoConfig,
 		SystemConfig,
 	};
 
-	GenesisConfig {
+	RuntimeGenesisConfig {
 		// System
 		system: SystemConfig {
 			// Add Wasm runtime to storage.

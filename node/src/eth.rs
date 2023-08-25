@@ -18,14 +18,15 @@
 
 use crate::client::{FullBackend, FullClient};
 pub use fc_consensus::FrontierBlockImport;
-pub use fc_db::frontier_database_dir;
-use fc_mapping_sync::{MappingSyncWorker, SyncStrategy};
+pub use fc_db::kv::frontier_database_dir;
+use fc_mapping_sync::{kv::MappingSyncWorker, SyncStrategy};
 use fc_rpc::{EthTask, OverrideHandle};
 pub use fc_rpc_core::types::{FeeHistoryCache, FeeHistoryCacheLimit, FilterPool};
 use futures::{future, prelude::*};
 use noir_core_primitives::Block;
 use sc_client_api::{BlockchainEvents, StateBackendFor};
 use sc_executor::NativeExecutionDispatch;
+use sc_network_sync::SyncingService;
 use sc_service::{error::Error as ServiceError, BasePath, Configuration, TaskManager};
 use sp_api::ConstructRuntimeApi;
 use sp_runtime::traits::BlakeTwo256;
@@ -40,14 +41,7 @@ use std::{
 pub type FrontierBackend = fc_db::Backend<Block>;
 
 pub fn db_config_dir(config: &Configuration) -> PathBuf {
-	let application = &config.impl_name;
-	config
-		.base_path
-		.as_ref()
-		.map(|base_path| base_path.config_dir(config.chain_spec.id()))
-		.unwrap_or_else(|| {
-			BasePath::from_project("", "", application).config_dir(config.chain_spec.id())
-		})
+	config.base_path.config_dir(config.chain_spec.id())
 }
 
 /// The ethereum-compatibility configuration used to run a node.
@@ -115,11 +109,17 @@ pub fn spawn_frontier_tasks<RuntimeApi, Executor>(
 	task_manager: &TaskManager,
 	client: Arc<FullClient<RuntimeApi, Executor>>,
 	backend: Arc<FullBackend>,
-	frontier_backend: Arc<FrontierBackend>,
+	frontier_backend: FrontierBackend,
 	filter_pool: Option<FilterPool>,
 	overrides: Arc<OverrideHandle<Block>>,
 	fee_history_cache: FeeHistoryCache,
 	fee_history_cache_limit: FeeHistoryCacheLimit,
+	sync: Arc<SyncingService<Block>>,
+	pubsub_notification_sinks: Arc<
+		fc_mapping_sync::EthereumBlockNotificationSinks<
+			fc_mapping_sync::EthereumBlockNotification<Block>,
+		>,
+	>,
 ) where
 	RuntimeApi: ConstructRuntimeApi<Block, FullClient<RuntimeApi, Executor>>,
 	RuntimeApi: Send + Sync + 'static,
@@ -127,22 +127,29 @@ pub fn spawn_frontier_tasks<RuntimeApi, Executor>(
 		EthCompatRuntimeApiCollection<StateBackend = StateBackendFor<FullBackend, Block>>,
 	Executor: NativeExecutionDispatch + 'static,
 {
-	task_manager.spawn_essential_handle().spawn(
-		"frontier-mapping-sync-worker",
-		Some("frontier"),
-		MappingSyncWorker::new(
-			client.import_notification_stream(),
-			Duration::new(6, 0),
-			client.clone(),
-			backend,
-			overrides.clone(),
-			frontier_backend,
-			3,
-			0,
-			SyncStrategy::Normal,
-		)
-		.for_each(|()| future::ready(())),
-	);
+	// Spawn main mapping sync worker background task.
+	match frontier_backend {
+		fc_db::Backend::KeyValue(b) => {
+			task_manager.spawn_essential_handle().spawn(
+				"frontier-mapping-sync-worker",
+				Some("frontier"),
+				fc_mapping_sync::kv::MappingSyncWorker::new(
+					client.import_notification_stream(),
+					Duration::new(6, 0),
+					client.clone(),
+					backend,
+					overrides.clone(),
+					Arc::new(b),
+					3,
+					0,
+					fc_mapping_sync::SyncStrategy::Normal,
+					sync,
+					pubsub_notification_sinks,
+				)
+				.for_each(|()| future::ready(())),
+			);
+		}
+	}
 
 	// Spawn Frontier EthFilterApi maintenance task.
 	if let Some(filter_pool) = filter_pool {
