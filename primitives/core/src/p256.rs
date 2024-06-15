@@ -18,9 +18,7 @@
 
 //! Simple ECDSA secp256r1 API.
 
-use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
-use scale_info::TypeInfo;
-use sp_runtime_interface::pass_by::PassByInner;
+use crate::crypto::{PublicBytes, SignatureBytes};
 
 use ecdsa::RecoveryId;
 use p256::{
@@ -28,19 +26,10 @@ use p256::{
 	elliptic_curve::{scalar::IsHigh, sec1::ToEncodedPoint},
 	PublicKey,
 };
-#[cfg(feature = "serde")]
-use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
-#[cfg(feature = "serde")]
-use sp_core::crypto::Ss58Codec;
-use sp_core::{
-	crypto::{
-		ByteArray, CryptoType, CryptoTypeId, Derive, DeriveError, DeriveJunction,
-		Pair as TraitPair, Public as TraitPublic, SecretStringError, UncheckedFrom,
-	},
-	hashing::blake2_256,
+use sp_core::crypto::{
+	ByteArray, CryptoType, CryptoTypeId, DeriveError, DeriveJunction, Pair as TraitPair,
+	SecretStringError,
 };
-#[cfg(all(not(feature = "std"), feature = "serde"))]
-use sp_std::alloc::{format, string::String};
 #[cfg(not(feature = "std"))]
 use sp_std::vec::Vec;
 
@@ -53,55 +42,25 @@ pub const PUBLIC_KEY_SERIALIZED_SIZE: usize = 33;
 /// The byte length of signature
 pub const SIGNATURE_SERIALIZED_SIZE: usize = 65;
 
+#[doc(hidden)]
+pub struct P256Tag;
+
 /// The secret seed.
 ///
 /// The raw secret seed, which can be used to create the `Pair`.
 type Seed = [u8; 32];
 
-/// The ECDSA P-256 compressed public key.
-#[derive(
-	Clone,
-	Copy,
-	Encode,
-	Decode,
-	PassByInner,
-	MaxEncodedLen,
-	TypeInfo,
-	Eq,
-	PartialEq,
-	PartialOrd,
-	Ord,
-	Hash,
-)]
-pub struct Public(pub [u8; PUBLIC_KEY_SERIALIZED_SIZE]);
-
-impl sp_core::crypto::FromEntropy for Public {
-	fn from_entropy(
-		input: &mut impl parity_scale_codec::Input,
-	) -> Result<Self, parity_scale_codec::Error> {
-		let mut result = Self([0u8; PUBLIC_KEY_SERIALIZED_SIZE]);
-		input.read(&mut result.0[..])?;
-		Ok(result)
-	}
-}
+/// The ECDSA compressed public key.
+pub type Public = PublicBytes<PUBLIC_KEY_SERIALIZED_SIZE, P256Tag>;
 
 impl Public {
-	/// A new instance from the given 33-byte `data`.
-	///
-	/// NOTE: No checking goes on to ensure this is a real public key. Only use it if
-	/// you are certain that the array actually is a pubkey. GIGO!
-	pub fn from_raw(data: [u8; PUBLIC_KEY_SERIALIZED_SIZE]) -> Self {
-		Self(data)
-	}
-
 	/// Create a new instance from the given full public key.
 	///
 	/// This will convert the full public key into the compressed format.
-	#[cfg(feature = "std")]
 	pub fn from_full(full: &[u8]) -> Result<Self, ()> {
 		let pubkey = if full.len() == 64 {
-			// Tag it as uncompressed public key.
 			let mut tagged_full = [0u8; 65];
+			// Tag it as uncompressed public key.
 			tagged_full[0] = 0x04;
 			tagged_full[1..].copy_from_slice(full);
 			PublicKey::from_sec1_bytes(&tagged_full)
@@ -115,39 +74,6 @@ impl Public {
 	}
 }
 
-impl ByteArray for Public {
-	const LEN: usize = PUBLIC_KEY_SERIALIZED_SIZE;
-}
-
-impl TraitPublic for Public {}
-
-impl Derive for Public {}
-
-impl AsRef<[u8]> for Public {
-	fn as_ref(&self) -> &[u8] {
-		&self.0[..]
-	}
-}
-
-impl AsMut<[u8]> for Public {
-	fn as_mut(&mut self) -> &mut [u8] {
-		&mut self.0[..]
-	}
-}
-
-impl TryFrom<&[u8]> for Public {
-	type Error = ();
-
-	fn try_from(data: &[u8]) -> Result<Self, Self::Error> {
-		if data.len() != Self::LEN {
-			return Err(())
-		}
-		let mut r = [0u8; Self::LEN];
-		r.copy_from_slice(data);
-		Ok(Self::unchecked_from(r))
-	}
-}
-
 #[cfg(feature = "full_crypto")]
 impl From<Pair> for Public {
 	fn from(x: Pair) -> Self {
@@ -155,137 +81,8 @@ impl From<Pair> for Public {
 	}
 }
 
-impl UncheckedFrom<[u8; PUBLIC_KEY_SERIALIZED_SIZE]> for Public {
-	fn unchecked_from(x: [u8; PUBLIC_KEY_SERIALIZED_SIZE]) -> Self {
-		Public(x)
-	}
-}
-
-#[cfg(feature = "std")]
-impl std::fmt::Display for Public {
-	fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-		write!(f, "{}", self.to_ss58check())
-	}
-}
-
-impl sp_std::fmt::Debug for Public {
-	#[cfg(feature = "std")]
-	fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-		let s = self.to_ss58check();
-		write!(f, "{} ({}...)", sp_core::hexdisplay::HexDisplay::from(&self.as_ref()), &s[0..8])
-	}
-
-	#[cfg(not(feature = "std"))]
-	fn fmt(&self, _: &mut sp_std::fmt::Formatter) -> sp_std::fmt::Result {
-		Ok(())
-	}
-}
-
-#[cfg(feature = "serde")]
-impl Serialize for Public {
-	fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-	where
-		S: Serializer,
-	{
-		serializer.serialize_str(&self.to_ss58check())
-	}
-}
-
-#[cfg(feature = "serde")]
-impl<'de> Deserialize<'de> for Public {
-	fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-	where
-		D: Deserializer<'de>,
-	{
-		Public::from_ss58check(&String::deserialize(deserializer)?)
-			.map_err(|e| de::Error::custom(format!("{:?}", e)))
-	}
-}
-
 /// A signature (a 512-bit value, plus 8 bits for recovery ID).
-#[derive(Hash, Encode, Decode, MaxEncodedLen, PassByInner, TypeInfo, PartialEq, Eq)]
-pub struct Signature(pub [u8; SIGNATURE_SERIALIZED_SIZE]);
-
-impl sp_core::crypto::Signature for Signature {}
-
-impl ByteArray for Signature {
-	const LEN: usize = SIGNATURE_SERIALIZED_SIZE;
-}
-
-impl TryFrom<&[u8]> for Signature {
-	type Error = ();
-
-	fn try_from(data: &[u8]) -> Result<Self, Self::Error> {
-		if data.len() == SIGNATURE_SERIALIZED_SIZE {
-			let mut inner = [0u8; SIGNATURE_SERIALIZED_SIZE];
-			inner.copy_from_slice(data);
-			Ok(Signature(inner))
-		} else {
-			Err(())
-		}
-	}
-}
-
-#[cfg(feature = "serde")]
-impl Serialize for Signature {
-	fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-	where
-		S: Serializer,
-	{
-		serializer.serialize_str(&array_bytes::bytes2hex("", self))
-	}
-}
-
-#[cfg(feature = "serde")]
-impl<'de> Deserialize<'de> for Signature {
-	fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-	where
-		D: Deserializer<'de>,
-	{
-		let signature_hex = array_bytes::hex2bytes(&String::deserialize(deserializer)?)
-			.map_err(|e| de::Error::custom(format!("{:?}", e)))?;
-		Signature::try_from(signature_hex.as_ref())
-			.map_err(|e| de::Error::custom(format!("{:?}", e)))
-	}
-}
-
-impl Clone for Signature {
-	fn clone(&self) -> Self {
-		let mut r = [0u8; SIGNATURE_SERIALIZED_SIZE];
-		r.copy_from_slice(&self.0[..]);
-		Signature(r)
-	}
-}
-
-impl Default for Signature {
-	fn default() -> Self {
-		Signature([0u8; SIGNATURE_SERIALIZED_SIZE])
-	}
-}
-
-impl From<Signature> for [u8; SIGNATURE_SERIALIZED_SIZE] {
-	fn from(v: Signature) -> [u8; SIGNATURE_SERIALIZED_SIZE] {
-		v.0
-	}
-}
-
-impl AsRef<[u8; SIGNATURE_SERIALIZED_SIZE]> for Signature {
-	fn as_ref(&self) -> &[u8; SIGNATURE_SERIALIZED_SIZE] {
-		&self.0
-	}
-}
-
-impl AsRef<[u8]> for Signature {
-	fn as_ref(&self) -> &[u8] {
-		&self.0[..]
-	}
-}
-
-impl AsMut<[u8]> for Signature {
-	fn as_mut(&mut self) -> &mut [u8] {
-		&mut self.0[..]
-	}
-}
+pub type Signature = SignatureBytes<SIGNATURE_SERIALIZED_SIZE, P256Tag>;
 
 #[cfg(feature = "full_crypto")]
 impl From<(EcdsaSignature, RecoveryId)> for Signature {
@@ -293,50 +90,11 @@ impl From<(EcdsaSignature, RecoveryId)> for Signature {
 		let mut data = [0u8; SIGNATURE_SERIALIZED_SIZE];
 		data[..64].copy_from_slice(&sig.to_bytes());
 		data[64] = rid.to_byte();
-		Signature(data)
-	}
-}
-
-impl sp_std::fmt::Debug for Signature {
-	#[cfg(feature = "std")]
-	fn fmt(&self, f: &mut sp_std::fmt::Formatter) -> sp_std::fmt::Result {
-		write!(f, "{}", sp_core::hexdisplay::HexDisplay::from(&self.0))
-	}
-
-	#[cfg(not(feature = "std"))]
-	fn fmt(&self, _: &mut sp_std::fmt::Formatter) -> sp_std::fmt::Result {
-		Ok(())
-	}
-}
-
-impl UncheckedFrom<[u8; SIGNATURE_SERIALIZED_SIZE]> for Signature {
-	fn unchecked_from(data: [u8; SIGNATURE_SERIALIZED_SIZE]) -> Signature {
-		Signature(data)
+		Signature::from_raw(data)
 	}
 }
 
 impl Signature {
-	/// A new instance from the given 65-byte `data`.
-	///
-	/// NOTE: No checking goes on to ensure this is a real signature. Only use it if
-	/// you are certain that the array actually is a signature. GIGO!
-	pub fn from_raw(data: [u8; SIGNATURE_SERIALIZED_SIZE]) -> Signature {
-		Signature(data)
-	}
-
-	/// A new instance from the given slice that should be 65 bytes long.
-	///
-	/// NOTE: No checking goes on to ensure this is a real signature. Only use it if
-	/// you are certain that the array actually is a signature. GIGO!
-	pub fn from_slice(data: &[u8]) -> Option<Self> {
-		if data.len() != SIGNATURE_SERIALIZED_SIZE {
-			return None
-		}
-		let mut r = [0u8; SIGNATURE_SERIALIZED_SIZE];
-		r.copy_from_slice(data);
-		Some(Signature(r))
-	}
-
 	/// A new instance from ASN.1 DER encoded bytes.
 	/*
 	#[cfg(feature = "std")]
@@ -350,7 +108,7 @@ impl Signature {
 
 	/// Recover the public key from this signature and a message.
 	pub fn recover<M: AsRef<[u8]>>(&self, message: M) -> Option<Public> {
-		self.recover_prehashed(&blake2_256(message.as_ref()))
+		self.recover_prehashed(&np_crypto_hashing::blake2_256(message.as_ref()))
 	}
 
 	/// Recover the public key from this signature and a pre-hashed message.
@@ -370,7 +128,8 @@ impl Signature {
 
 /// Derive a single hard junction.
 fn derive_hard_junction(secret_seed: &Seed, cc: &[u8; 32]) -> Seed {
-	("Secp256r1HDKD", secret_seed, cc).using_encoded(sp_core::hashing::blake2_256)
+	use parity_scale_codec::Encode;
+	("Secp256r1HDKD", secret_seed, cc).using_encoded(np_crypto_hashing::blake2_256)
 }
 
 /// A key pair.
@@ -421,7 +180,7 @@ impl TraitPair for Pair {
 	/// Sign a message.
 	#[cfg(feature = "full_crypto")]
 	fn sign(&self, message: &[u8]) -> Signature {
-		self.sign_prehashed(&blake2_256(message))
+		self.sign_prehashed(&np_crypto_hashing::blake2_256(message))
 	}
 
 	/// Verify a signature on a message. Returns true if the signature is good.
@@ -478,8 +237,8 @@ impl CryptoType for Pair {
 mod tests {
 	use super::*;
 	use sp_core::crypto::{
-		default_ss58_version, set_default_ss58_version, PublicError, Ss58AddressFormat,
-		Ss58AddressFormatRegistry, DEV_PHRASE,
+		set_default_ss58_version, PublicError, Ss58AddressFormat, Ss58AddressFormatRegistry,
+		Ss58Codec, DEV_PHRASE,
 	};
 
 	#[test]
@@ -614,6 +373,7 @@ mod tests {
 		let (pair2, _) = Pair::from_phrase(&phrase, None).unwrap();
 
 		assert_ne!(pair1.public(), pair2.public());
+		assert_ne!(pair1.secret, pair2.secret);
 	}
 
 	#[test]
@@ -657,8 +417,9 @@ mod tests {
 		// We need to run this test in its own process to not interfere with other tests running in
 		// parallel and also relying on the ss58 version.
 		if std::env::var("RUN_CUSTOM_FORMAT_TEST") == Ok("1".into()) {
+			use sp_core::crypto::Ss58AddressFormat;
 			// temp save default format version
-			let default_format = default_ss58_version();
+			let default_format = sp_core::crypto::default_ss58_version();
 			// set current ss58 version is custom "200" `Ss58AddressFormat::Custom(200)`
 
 			set_default_ss58_version(Ss58AddressFormat::custom(200));
@@ -692,7 +453,7 @@ mod tests {
 		let signature = pair.sign(&message[..]);
 		let serialized_signature = serde_json::to_string(&signature).unwrap();
 		// Signature is 65 bytes, so 130 chars + 2 quote chars
-		assert_eq!(serialized_signature.len(), 132);
+		assert_eq!(serialized_signature.len(), SIGNATURE_SERIALIZED_SIZE * 2 + 2);
 		let signature = serde_json::from_str(&serialized_signature).unwrap();
 		assert!(Pair::verify(&signature, &message[..], &pair.public()));
 	}
@@ -731,7 +492,7 @@ mod tests {
 
 		// using pre-hashed `msg` works
 		let msg = b"this should be hashed";
-		let sig1 = pair.sign_prehashed(&blake2_256(msg));
+		let sig1 = pair.sign_prehashed(&np_crypto_hashing::blake2_256(msg));
 		let sig2 = pair.sign(msg);
 		assert_eq!(sig1, sig2);
 	}
@@ -741,12 +502,12 @@ mod tests {
 		let (pair, _, _) = Pair::generate_with_phrase(Some("password"));
 
 		// `msg` and `sig` match
-		let msg = blake2_256(b"this should be hashed");
+		let msg = np_crypto_hashing::blake2_256(b"this should be hashed");
 		let sig = pair.sign_prehashed(&msg);
 		assert!(Pair::verify_prehashed(&sig, &msg, &pair.public()));
 
 		// `msg` and `sig` don't match
-		let msg = blake2_256(b"this is a different message");
+		let msg = np_crypto_hashing::blake2_256(b"this is a different message");
 		assert!(!Pair::verify_prehashed(&sig, &msg, &pair.public()));
 	}
 
@@ -755,7 +516,7 @@ mod tests {
 		let (pair, _, _) = Pair::generate_with_phrase(Some("password"));
 
 		// recovered key matches signing key
-		let msg = blake2_256(b"this should be hashed");
+		let msg = np_crypto_hashing::blake2_256(b"this should be hashed");
 		let sig = pair.sign_prehashed(&msg);
 		let key = sig.recover_prehashed(&msg).unwrap();
 		assert_eq!(pair.public(), key);
@@ -764,7 +525,7 @@ mod tests {
 		assert!(Pair::verify_prehashed(&sig, &msg, &key));
 
 		// recovered key and signing key don't match
-		let msg = blake2_256(b"this is a different message");
+		let msg = np_crypto_hashing::blake2_256(b"this is a different message");
 		let key = sig.recover_prehashed(&msg).unwrap();
 		assert_ne!(pair.public(), key);
 	}
