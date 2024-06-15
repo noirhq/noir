@@ -1,0 +1,38 @@
+[package]
+name = "np-babel"
+version = { workspace = true }
+license = "Apache-2.0"
+
+authors = { workspace = true }
+edition = { workspace = true }
+repository = { workspace = true }
+
+[dependencies]
+array-bytes = { workspace = true, optional = true }
+np-crypto = { workspace = true }
+np-io = { workspace = true }
+parity-scale-codec = { workspace = true }
+scale-info = { workspace = true }
+serde = { workspace = true, optional = true }
+sp-core = { workspace = true }
+sp-io = { workspace = true }
+sp-std = { workspace = true }
+subtle-encoding = { workspace = true, optional = true }
+
+[features]
+default = ["std"]
+std = [
+	"array-bytes",
+	"np-crypto/std",
+	"np-io/std",
+	"parity-scale-codec/std",
+	"scale-info/std",
+	"serde/std",
+	"sp-core/std",
+	"sp-io/std",
+	"sp-std/std",
+]
+serde = [
+	"dep:serde",
+	"subtle-encoding",
+]
