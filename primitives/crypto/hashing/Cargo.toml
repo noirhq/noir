@@ -1,0 +1,17 @@
+[package]
+name = "np-crypto-hashing"
+version = { workspace = true }
+license = "Apache-2.0"
+
+authors = { workspace = true }
+edition = { workspace = true }
+repository = { workspace = true }
+
+[dependencies]
+ripemd = { workspace = true, optional = true }
+
+[features]
+default = ["std"]
+std = [
+	"ripemd/std",
+]

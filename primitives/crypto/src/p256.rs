@@ -206,6 +206,8 @@ impl<'de> Deserialize<'de> for Public {
 #[derive(Hash, Encode, Decode, MaxEncodedLen, PassByInner, TypeInfo, PartialEq, Eq)]
 pub struct Signature(pub [u8; SIGNATURE_SERIALIZED_SIZE]);
 
+impl sp_core::crypto::Signature for Signature {}
+
 impl ByteArray for Signature {
 	const LEN: usize = SIGNATURE_SERIALIZED_SIZE;
 }

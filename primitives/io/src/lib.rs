@@ -24,7 +24,7 @@ use np_crypto::{p256, webauthn};
 use sp_runtime_interface::runtime_interface;
 
 #[cfg(feature = "std")]
-use secp256k1::PublicKey;
+use secp256k1::{ecdsa::Signature, Message, PublicKey};
 
 /// Interfaces for working with crypto related types from within the runtime.
 #[runtime_interface]
@@ -57,13 +57,30 @@ pub trait Crypto {
 		Some(res)
 	}
 
-	/// Hash with ripemd160.
-	fn ripemd160(msg: &[u8]) -> [u8; 20] {
-		hp_crypto::ripemd160(msg)
-	}
+	/// Verify a non-recoverable secp256k1 ECDSA signature (64 bytes).
+	fn secp256k1_ecdsa_verify(sig: &[u8], msg: &[u8], pub_key: &[u8]) -> bool {
+		let sig = match Signature::from_compact(sig) {
+			Ok(v) => v,
+			Err(_) => return false,
+		};
+		let msg = match Message::from_digest_slice(msg) {
+			Ok(v) => v,
+			Err(_) => return false,
+		};
+		let pub_key = match PublicKey::from_slice(pub_key) {
+			Ok(v) => v,
+			Err(_) => return false,
+		};
 
-	/// Verify with secp256k1.
-	fn secp256k1_ecdsa_verify(sig: &[u8], msg: &[u8], pk: &[u8]) -> bool {
-		hp_crypto::secp256k1_ecdsa_verify(sig, msg, pk)
+		sig.verify(&msg, &pub_key).is_ok()
+	}
+}
+
+/// Interface that provides functions for hashing with different algorithms.
+#[runtime_interface]
+pub trait Hashing {
+	/// Hash with ripemd160.
+	fn ripemd160(data: &[u8]) -> [u8; 20] {
+		np_crypto_hashing::ripemd160(data)
 	}
 }
