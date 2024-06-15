@@ -20,7 +20,7 @@
 #![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use np_core::{p256, webauthn};
+use np_core::{ecdsa, p256, webauthn};
 use sp_runtime_interface::runtime_interface;
 
 #[cfg(feature = "std")]
@@ -51,10 +51,7 @@ pub trait Crypto {
 
 	/// Decompress secp256k1 public key.
 	fn secp256k1_pubkey_serialize(pubkey: &[u8; 33]) -> Option<[u8; 64]> {
-		let pubkey = PublicKey::from_slice(&pubkey[..]).ok()?;
-		let mut res = [0u8; 64];
-		res.copy_from_slice(&pubkey.serialize_uncompressed()[1..]);
-		Some(res)
+		ecdsa::secp256k1_pubkey_serialize(pubkey)
 	}
 
 	/// Verify a non-recoverable secp256k1 ECDSA signature (64 bytes).
