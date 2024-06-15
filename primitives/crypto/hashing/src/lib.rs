@@ -19,6 +19,8 @@
 
 use ripemd::{Digest, Ripemd160};
 
+pub use sp_crypto_hashing::*;
+
 /// Do a Ripemd160 hash and return result.
 pub fn ripemd160(data: &[u8]) -> [u8; 20] {
 	Ripemd160::digest(data).into()

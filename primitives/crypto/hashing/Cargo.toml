@@ -9,9 +9,11 @@ repository = { workspace = true }
 
 [dependencies]
 ripemd = { workspace = true, optional = true }
+sp-crypto-hashing = { workspace = true }
 
 [features]
 default = ["std"]
 std = [
 	"ripemd/std",
+	"sp-crypto-hashing/std",
 ]

@@ -15,17 +15,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Cryptography extensions for Noir.
+//! Cryptographic utilities.
 
-#![warn(missing_docs)]
-#![cfg_attr(not(feature = "std"), no_std)]
-
-mod crypto_bytes;
-
-pub mod bip32;
-pub mod crypto;
-pub mod ecdsa;
-pub mod p256;
-pub mod webauthn;
-
-pub mod babel;
+pub use crate::crypto_bytes::{AddressBytes, CryptoBytes};

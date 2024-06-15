@@ -26,3 +26,24 @@ pub trait EcdsaExt {
 	/// Convert to cosmos address, if available.
 	fn to_cosm_address(&self) -> Option<H160>;
 }
+
+/// Decompress secp256k1 public key.
+pub fn secp256k1_pubkey_serialize(pubkey: &[u8; 33]) -> Option<[u8; 64]> {
+	#[cfg(not(feature = "std"))]
+	{
+		use k256::PublicKey;
+
+		let pubkey = PublicKey::from_sec1_bytes(&pubkey[..]).ok()?;
+		<[u8; 64]>::try_from(&pubkey.to_encoded_point(false).as_bytes()[1..]).ok()
+	}
+
+	#[cfg(feature = "std")]
+	{
+		use secp256k1::PublicKey;
+
+		let pubkey = PublicKey::from_slice(&pubkey[..]).ok()?;
+		let mut res = [0u8; 64];
+		res.copy_from_slice(&pubkey.serialize_uncompressed()[1..]);
+		Some(res)
+	}
+}
