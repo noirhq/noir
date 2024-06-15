@@ -30,11 +30,12 @@ pub mod self_contained;
 pub mod traits;
 
 pub use accountid32::AccountId32;
-pub use multikey::{Multikey, MultikeyKind};
+pub use multikey::Multikey;
 
 #[cfg(feature = "serde")]
 pub use serde::{Deserialize, Serialize};
 
+use crate::traits::{Checkable, VerifyMut};
 use np_core::{p256, webauthn};
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
@@ -104,63 +105,57 @@ impl Verify for AuthenticationProof {
 	}
 }
 
-impl traits::VerifyMut for AuthenticationProof {
+impl VerifyMut for AuthenticationProof {
 	type Signer = Multikey;
 
 	fn verify_mut<L: Lazy<[u8]>>(&self, mut msg: L, signer: &mut AccountId32) -> bool {
-		match (self, signer.clone()) {
+		match (self, signer) {
 			(Self::Ed25519(ref sig), who) => match ed25519::Public::try_from(who.as_ref()) {
-				Ok(signer) => sig.verify(msg, &signer),
+				Ok(signer) => sig.verify(msg, &signer).then(|| who.check(signer)).unwrap_or(false),
 				Err(()) => false,
 			},
 			(Self::Sr25519(ref sig), who) => match sr25519::Public::try_from(who.as_ref()) {
-				Ok(signer) => sig.verify(msg, &signer),
+				Ok(signer) => sig.verify(msg, &signer).then(|| who.check(signer)).unwrap_or(false),
 				Err(()) => false,
 			},
 			(Self::Secp256k1(ref sig), who) => {
 				let m = sp_io::hashing::blake2_256(msg.get());
 				match sp_io::crypto::secp256k1_ecdsa_recover_compressed(sig.as_ref(), &m) {
-					Ok(pubkey) =>
-						if &sp_io::hashing::blake2_256(pubkey.as_ref()) ==
-							AsRef::<[u8; 32]>::as_ref(&who)
-						{
-							signer.set_source(ecdsa::Public(pubkey).into());
-							true
-						} else {
-							false
-						},
+					Ok(pubkey) => who.check(ecdsa::Public::from_raw(pubkey)),
 					_ => false,
 				}
 			},
 			(Self::P256(ref sig), who) => {
 				let m = sp_io::hashing::blake2_256(msg.get());
 				match np_io::crypto::p256_recover_compressed(sig.as_ref(), &m) {
-					Some(pubkey) =>
-						if &sp_io::hashing::blake2_256(pubkey.as_ref()) ==
-							AsRef::<[u8; 32]>::as_ref(&who)
-						{
-							signer.set_source(p256::Public(pubkey).into());
-							true
-						} else {
-							false
-						},
+					Some(pubkey) => who.check(p256::Public::from_raw(pubkey)),
 					_ => false,
 				}
 			},
 			(Self::WebAuthn(ref sig), who) => {
 				match np_io::crypto::webauthn_recover(&sig, msg.get()) {
-					Some(pubkey) =>
-						if &sp_io::hashing::blake2_256(pubkey.as_ref()) ==
-							AsRef::<[u8; 32]>::as_ref(&who)
-						{
-							signer.set_source(webauthn::Public::from_raw(pubkey).into());
-							true
-						} else {
-							false
-						},
+					Some(pubkey) => who.check(webauthn::Public::from_raw(pubkey)),
 					_ => false,
 				}
 			},
 		}
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use super::{traits::Property, *};
+
+	#[test]
+	fn check_proof() {
+		use sp_core::Pair;
+		let (pair, _) = ecdsa::Pair::generate();
+		let msg = b"Heal the world, make it a better place";
+		let signature = pair.sign(msg);
+		let proof = AuthenticationProof::Secp256k1(signature);
+		let mut signer = AccountId32::from(pair.public());
+		assert!(proof.verify_mut(&msg[..], &mut signer));
+		let key = signer.get().clone().unwrap();
+		assert_eq!(key, Multikey::from(pair.public()));
 	}
 }
