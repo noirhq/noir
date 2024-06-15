@@ -17,4 +17,22 @@
 
 //! Cryptographic utilities.
 
-pub use crate::crypto_bytes::{AddressBytes, CryptoBytes};
+pub use crate::crypto_bytes::{CryptoBytes, PublicBytes, SignatureBytes};
+
+pub use address_bytes::*;
+
+mod address_bytes {
+	use super::CryptoBytes;
+
+	/// Tag used for generic address bytes.
+	pub struct AddressTag;
+
+	/// Generic encoded address.
+	pub type AddressBytes<const N: usize, SubTag> = CryptoBytes<N, (AddressTag, SubTag)>;
+
+	impl<const N: usize, SubTag> sp_std::fmt::Debug for AddressBytes<N, SubTag> {
+		fn fmt(&self, f: &mut sp_std::fmt::Formatter) -> sp_std::fmt::Result {
+			write!(f, "{}", array_bytes::bytes2hex("", self.0))
+		}
+	}
+}
