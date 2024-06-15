@@ -30,3 +30,21 @@ pub trait VerifyMut {
 		signer: &mut <Self::Signer as IdentifyAccount>::AccountId,
 	) -> bool;
 }
+
+/// Validity checker.
+pub trait Checkable<T> {
+	/// Result of checking.
+	type Output;
+
+	/// Checks the validity of a value.
+	fn check(&mut self, value: T) -> Self::Output;
+}
+
+/// Property accessor.
+pub trait Property<T> {
+	/// Get the reference to the property.
+	fn get(&self) -> &T;
+
+	/// Set the property.
+	fn set(&mut self, value: T);
+}

@@ -8,7 +8,7 @@ members = [
 	"primitives/core",
 	"primitives/crypto/hashing",
 	"primitives/io",
-	#"primitives/runtime",
+	"primitives/runtime",
 	#"runtime",
 ]
 

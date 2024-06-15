@@ -46,6 +46,15 @@ pub mod ethereum {
 		}
 	}
 
+	impl From<&ecdsa::Public> for EthereumAddress {
+		fn from(public: &ecdsa::Public) -> Self {
+			let uncompressed_public = crate::ecdsa::secp256k1_pubkey_serialize(&public.0)
+				.expect("Uncompressed secp256k1 public key; qed");
+			let hash = np_crypto_hashing::keccak_256(&uncompressed_public);
+			Self::try_from(&hash[12..]).expect("Ethereum address; qed")
+		}
+	}
+
 	#[cfg(feature = "std")]
 	impl std::fmt::Display for EthereumAddress {
 		fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -91,6 +100,14 @@ pub mod cosmos {
 
 	impl From<ecdsa::Public> for CosmosAddress {
 		fn from(public: ecdsa::Public) -> Self {
+			let hash = np_crypto_hashing::sha2_256(&public.0);
+			let hash = np_crypto_hashing::ripemd160(&hash);
+			Self::from_raw(hash)
+		}
+	}
+
+	impl From<&ecdsa::Public> for CosmosAddress {
+		fn from(public: &ecdsa::Public) -> Self {
 			let hash = np_crypto_hashing::sha2_256(&public.0);
 			let hash = np_crypto_hashing::ripemd160(&hash);
 			Self::from_raw(hash)

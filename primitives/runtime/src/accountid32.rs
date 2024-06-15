@@ -1,31 +1,37 @@
 // This file is part of Noir.
 
 // Copyright (C) 2023 Haderech Pte. Ltd.
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: Apache-2.0
 
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// 	http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
-use crate::Multikey;
-use np_core::ecdsa::EcdsaExt;
+use crate::{
+	traits::{Checkable, Property},
+	Multikey,
+};
+use np_core::{
+	babel::{CosmosAddress, EthereumAddress},
+	p256,
+};
 use parity_scale_codec::{Decode, Encode, EncodeLike, Error, Input, MaxEncodedLen};
 use scale_info::{Type, TypeInfo};
 #[cfg(feature = "serde")]
-use sp_core::crypto::{PublicError, Ss58AddressFormat, Ss58Codec};
+use sp_core::crypto::Ss58Codec;
 use sp_core::{
-	crypto::{AccountId32 as SubstrateAccountId32, FromEntropy, UncheckedFrom},
-	ByteArray, H160, H256,
+	crypto::{FromEntropy, UncheckedFrom},
+	ecdsa, ed25519, sr25519, ByteArray, H256,
 };
+use sp_io::hashing::blake2_256;
 #[cfg(all(feature = "serde", not(feature = "std")))]
 use sp_std::{
 	alloc::{format, string::String},
@@ -35,11 +41,11 @@ use sp_std::{
 /// An opaque 32-byte cryptographic identifier.
 ///
 /// HACK: This type replaces Substrate AccountId32 to be passed keeping recovered public key.
-/// `source` field should be ignored during serialization.
+/// `key` field should be ignored during serialization.
 #[derive(Clone, Eq)]
 pub struct AccountId32 {
 	inner: [u8; 32],
-	source: Option<Multikey>,
+	key: Option<Multikey>,
 }
 
 impl AccountId32 {
@@ -48,17 +54,17 @@ impl AccountId32 {
 	/// Equivalent to this types `From<[u8; 32]>` implementation. For the lack of const
 	/// support in traits we have this constructor.
 	pub const fn new(inner: [u8; 32]) -> Self {
-		Self { inner, source: None }
+		Self { inner, key: None }
+	}
+}
+
+impl Property<Option<Multikey>> for AccountId32 {
+	fn get(&self) -> &Option<Multikey> {
+		&self.key
 	}
 
-	/// Returns the source of account id, if possible.
-	pub fn source(&self) -> Option<&Multikey> {
-		self.source.as_ref()
-	}
-
-	/// Sets the source of account id.
-	pub fn set_source(&mut self, source: Multikey) {
-		self.source = Some(source);
+	fn set(&mut self, value: Option<Multikey>) {
+		self.key = value;
 	}
 }
 
@@ -94,7 +100,7 @@ impl EncodeLike for AccountId32 {}
 
 impl Decode for AccountId32 {
 	fn decode<I: Input>(input: &mut I) -> Result<Self, Error> {
-		Ok(Self { inner: <[u8; 32]>::decode(input)?, source: None })
+		Ok(Self { inner: <[u8; 32]>::decode(input)?, key: None })
 	}
 }
 
@@ -105,10 +111,10 @@ impl MaxEncodedLen for AccountId32 {
 }
 
 impl TypeInfo for AccountId32 {
-	type Identity = <SubstrateAccountId32 as TypeInfo>::Identity;
+	type Identity = <sp_core::crypto::AccountId32 as TypeInfo>::Identity;
 
 	fn type_info() -> Type {
-		<SubstrateAccountId32 as TypeInfo>::type_info()
+		<sp_core::crypto::AccountId32 as TypeInfo>::type_info()
 	}
 }
 
@@ -121,7 +127,7 @@ impl sp_std::hash::Hash for AccountId32 {
 
 impl UncheckedFrom<H256> for AccountId32 {
 	fn unchecked_from(h: H256) -> Self {
-		Self { inner: h.into(), source: None }
+		Self { inner: h.into(), key: None }
 	}
 }
 
@@ -130,16 +136,7 @@ impl ByteArray for AccountId32 {
 }
 
 #[cfg(feature = "serde")]
-impl Ss58Codec for AccountId32 {
-	fn from_ss58check_with_version(s: &str) -> Result<(Self, Ss58AddressFormat), PublicError> {
-		SubstrateAccountId32::from_ss58check_with_version(s)
-			.map(|(inner, format)| (Self { inner: inner.into(), source: None }, format))
-	}
-
-	fn to_ss58check_with_version(&self, version: Ss58AddressFormat) -> String {
-		SubstrateAccountId32::new(self.inner).to_ss58check_with_version(version)
-	}
-}
+impl Ss58Codec for AccountId32 {}
 
 impl AsRef<[u8]> for AccountId32 {
 	fn as_ref(&self) -> &[u8] {
@@ -191,9 +188,39 @@ impl From<H256> for AccountId32 {
 	}
 }
 
-impl From<sp_core::ecdsa::Public> for AccountId32 {
-	fn from(v: sp_core::ecdsa::Public) -> Self {
-		Self { inner: sp_core::blake2_256(v.as_ref()), source: Some(v.into()) }
+impl From<ed25519::Public> for AccountId32 {
+	fn from(v: ed25519::Public) -> Self {
+		Self { inner: v.0.clone(), key: Some(v.into()) }
+	}
+}
+
+impl From<sr25519::Public> for AccountId32 {
+	fn from(v: sr25519::Public) -> Self {
+		Self { inner: v.0.clone(), key: Some(v.into()) }
+	}
+}
+
+impl From<ecdsa::Public> for AccountId32 {
+	fn from(v: ecdsa::Public) -> Self {
+		Self { inner: blake2_256(v.as_ref()), key: Some(v.into()) }
+	}
+}
+
+impl From<&ecdsa::Public> for AccountId32 {
+	fn from(v: &ecdsa::Public) -> Self {
+		Self { inner: blake2_256(v), key: Some((*v).into()) }
+	}
+}
+
+impl From<p256::Public> for AccountId32 {
+	fn from(v: p256::Public) -> Self {
+		Self { inner: blake2_256(v.as_ref()), key: Some(v.into()) }
+	}
+}
+
+impl From<&p256::Public> for AccountId32 {
+	fn from(v: &p256::Public) -> Self {
+		Self { inner: blake2_256(v), key: Some((*v).into()) }
 	}
 }
 
@@ -269,12 +296,123 @@ impl FromEntropy for AccountId32 {
 	}
 }
 
-impl EcdsaExt for AccountId32 {
-	fn to_eth_address(&self) -> Option<H160> {
-		self.source.as_ref().and_then(EcdsaExt::to_eth_address)
-	}
+impl Checkable<ed25519::Public> for AccountId32 {
+	type Output = bool;
 
-	fn to_cosm_address(&self) -> Option<H160> {
-		self.source.as_ref().and_then(EcdsaExt::to_cosm_address)
+	fn check(&mut self, v: ed25519::Public) -> Self::Output {
+		(self.inner == v.0)
+			.then(|| {
+				self.key = Some(v.into());
+			})
+			.is_some()
+	}
+}
+
+impl Checkable<sr25519::Public> for AccountId32 {
+	type Output = bool;
+
+	fn check(&mut self, v: sr25519::Public) -> Self::Output {
+		(self.inner == v.0)
+			.then(|| {
+				self.key = Some(v.into());
+			})
+			.is_some()
+	}
+}
+
+impl Checkable<ecdsa::Public> for AccountId32 {
+	type Output = bool;
+
+	fn check(&mut self, v: ecdsa::Public) -> Self::Output {
+		(self.inner == blake2_256(v.as_ref()))
+			.then(|| {
+				self.key = Some(v.into());
+			})
+			.is_some()
+	}
+}
+
+impl Checkable<p256::Public> for AccountId32 {
+	type Output = bool;
+
+	fn check(&mut self, v: p256::Public) -> Self::Output {
+		(self.inner == blake2_256(v.as_ref()))
+			.then(|| {
+				self.key = Some(v.into());
+			})
+			.is_some()
+	}
+}
+
+impl TryFrom<&AccountId32> for EthereumAddress {
+	type Error = ();
+
+	fn try_from(v: &AccountId32) -> Result<Self, Self::Error> {
+		if let Some(v) = v.get() {
+			if let Ok(pubkey) = ecdsa::Public::try_from(v.clone()) {
+				return Ok(EthereumAddress::from(&pubkey));
+			}
+		}
+		Err(())
+	}
+}
+
+impl TryFrom<&AccountId32> for CosmosAddress {
+	type Error = ();
+
+	fn try_from(v: &AccountId32) -> Result<Self, Self::Error> {
+		if let Some(v) = v.get() {
+			if let Ok(pubkey) = ecdsa::Public::try_from(v.clone()) {
+				return Ok(CosmosAddress::from(&pubkey));
+			}
+		}
+		Err(())
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn accountid_32_from_str_works() {
+		use std::str::FromStr;
+		assert!(AccountId32::from_str("5G9VdMwXvzza9pS8qE8ZHJk3CheHW9uucBn9ngW4C1gmmzpv").is_ok());
+		assert!(AccountId32::from_str(
+			"5c55177d67b064bb5d189a3e1ddad9bc6646e02e64d6e308f5acbb1533ac430d"
+		)
+		.is_ok());
+		assert!(AccountId32::from_str(
+			"0x5c55177d67b064bb5d189a3e1ddad9bc6646e02e64d6e308f5acbb1533ac430d"
+		)
+		.is_ok());
+
+		assert_eq!(
+			AccountId32::from_str("99G9VdMwXvzza9pS8qE8ZHJk3CheHW9uucBn9ngW4C1gmmzpv").unwrap_err(),
+			"invalid ss58 address.",
+		);
+		assert_eq!(
+			AccountId32::from_str(
+				"gc55177d67b064bb5d189a3e1ddad9bc6646e02e64d6e308f5acbb1533ac430d"
+			)
+			.unwrap_err(),
+			"invalid hex address.",
+		);
+		assert_eq!(
+			AccountId32::from_str(
+				"0xgc55177d67b064bb5d189a3e1ddad9bc6646e02e64d6e308f5acbb1533ac430d"
+			)
+			.unwrap_err(),
+			"invalid hex address.",
+		);
+
+		// valid hex but invalid length will be treated as ss58.
+		assert_eq!(
+			AccountId32::from_str(
+				"55c55177d67b064bb5d189a3e1ddad9bc6646e02e64d6e308f5acbb1533ac430d"
+			)
+			.unwrap_err(),
+			"invalid ss58 address.",
+		);
 	}
 }

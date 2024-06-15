@@ -17,14 +17,11 @@
 
 //! Interoperable public key representation.
 
-use crate::AccountId32;
-use np_core::{ecdsa::EcdsaExt, p256};
+use crate::{traits::Property, AccountId32};
+use np_core::p256;
 use parity_scale_codec::{Decode, Encode, EncodeLike, Error as CodecError, Input, MaxEncodedLen};
 use scale_info::TypeInfo;
-use sp_core::{
-	crypto::{PublicError, UncheckedFrom},
-	ecdsa, ed25519, sr25519, ByteArray, H160, H256,
-};
+use sp_core::{ecdsa, ed25519, sr25519, H256};
 use sp_runtime::traits::IdentifyAccount;
 #[cfg(not(feature = "std"))]
 use sp_std::vec::Vec;
@@ -55,24 +52,6 @@ pub mod multicodec {
 	pub const BLAKE2B_256: &[u8] = &[0xa0, 0xe4, 0x02, 0x20];
 }
 
-/// The type of public key that multikey contains.
-#[cfg_attr(feature = "std", derive(Debug))]
-#[derive(Clone, PartialEq, Eq)]
-pub enum MultikeyKind {
-	/// Unknown public key type. (Invalid)
-	Unknown,
-	/// Ed25519 public key type.
-	Ed25519,
-	/// Sr25519 public key type.
-	Sr25519,
-	/// Secp256k1 public key type.
-	Secp256k1,
-	/// P256 public key type.
-	P256,
-	/// BLAKE2b-256 hash value address for non-verifiable address.
-	Blake2b256,
-}
-
 #[cfg_attr(feature = "std", derive(thiserror::Error))]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Error {
@@ -80,6 +59,8 @@ pub enum Error {
 	BadLength,
 	#[cfg_attr(feature = "std", error("invalid multicodec prefix"))]
 	InvalidPrefix,
+	#[cfg_attr(feature = "std", error("invalid conversion"))]
+	InvalidConversion,
 }
 
 /// A universal representation of a public key encoded with multicodec.
@@ -87,19 +68,29 @@ pub enum Error {
 /// NOTE: https://www.w3.org/TR/vc-data-integrity/#multikey
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Hash))]
-pub struct Multikey(Vec<u8>);
+pub enum Multikey {
+	/// Ed25519 public key.
+	Ed25519(ed25519::Public),
+	/// Sr25519 public key.
+	Sr25519(sr25519::Public),
+	/// Secp256k1 public key.
+	Secp256k1(ecdsa::Public),
+	/// P-256 public key.
+	P256(p256::Public),
+	/// Blake2b-256 hash.
+	Blake2b256(H256),
+}
 
 impl IdentifyAccount for Multikey {
 	type AccountId = AccountId32;
 
 	fn into_account(self) -> Self::AccountId {
-		match self.kind() {
-			MultikeyKind::Ed25519 | MultikeyKind::Sr25519 =>
-				<[u8; 32]>::try_from(&self.0[2..]).unwrap().into(),
-			MultikeyKind::Secp256k1 | MultikeyKind::P256 =>
-				sp_io::hashing::blake2_256(&self.0[2..]).into(),
-			MultikeyKind::Blake2b256 => <[u8; 32]>::try_from(&self.0[4..]).unwrap().into(),
-			_ => panic!("invalid multikey"),
+		match self {
+			Multikey::Ed25519(k) => AccountId32::from(k),
+			Multikey::Sr25519(k) => AccountId32::from(k),
+			Multikey::Secp256k1(k) => AccountId32::from(k),
+			Multikey::P256(k) => AccountId32::from(k),
+			Multikey::Blake2b256(k) => AccountId32::from(k),
 		}
 	}
 }
@@ -110,7 +101,7 @@ impl Serialize for Multikey {
 	where
 		S: Serializer,
 	{
-		let encoded = String::from("u") + &Base64UrlUnpadded::encode_string(&self.0);
+		let encoded = String::from("u") + &Base64UrlUnpadded::encode_string(&self.encode());
 		serializer.serialize_str(&encoded)
 	}
 }
@@ -145,55 +136,6 @@ impl<'de> Deserialize<'de> for Multikey {
 	}
 }
 
-impl Multikey {
-	/// Get the type of public key that contains.
-	pub fn kind(&self) -> MultikeyKind {
-		match &self.0[0..4] {
-			[0xe7, 0x01, ..] => MultikeyKind::Secp256k1,
-			[0xed, 0x01, ..] => MultikeyKind::Ed25519,
-			[0xef, 0x01, ..] => MultikeyKind::Sr25519,
-			[0x80, 0x24, ..] => MultikeyKind::P256,
-			[0xa0, 0xe4, 0x02, 0x20] => MultikeyKind::Blake2b256,
-			_ => MultikeyKind::Unknown,
-		}
-	}
-}
-
-impl EcdsaExt for Multikey {
-	fn to_eth_address(&self) -> Option<H160> {
-		match self.kind() {
-			MultikeyKind::Secp256k1 => {
-				let pubkey =
-					np_io::crypto::secp256k1_pubkey_serialize(&self.0[2..].try_into().unwrap())?;
-				Some(H160::from_slice(&sp_io::hashing::keccak_256(&pubkey)[12..]))
-			},
-			_ => None,
-		}
-	}
-
-	fn to_cosm_address(&self) -> Option<H160> {
-		match self.kind() {
-			MultikeyKind::Secp256k1 => {
-				let hashed = sp_io::hashing::sha2_256(&self.0[2..]);
-				Some(np_io::crypto::ripemd160(&hashed).into())
-			},
-			_ => None,
-		}
-	}
-}
-
-impl AsRef<[u8]> for Multikey {
-	fn as_ref(&self) -> &[u8] {
-		self.0.as_ref()
-	}
-}
-
-impl AsMut<[u8]> for Multikey {
-	fn as_mut(&mut self) -> &mut [u8] {
-		self.0.as_mut()
-	}
-}
-
 impl TryFrom<&[u8]> for Multikey {
 	type Error = Error;
 
@@ -218,16 +160,11 @@ impl TryFrom<Vec<u8>> for Multikey {
 				sr25519::Public::try_from(&v[2..]).map_err(|_| Error::BadLength).map(Into::into),
 			[0x80, 0x24, ..] =>
 				p256::Public::try_from(&v[2..]).map_err(|_| Error::BadLength).map(Into::into),
-			[0xa0, 0xe4, 0x02, 0x20] =>
-				(v.len() == 36).then(|| Self(Vec::from(&v[4..]))).ok_or(Error::BadLength),
+			[0xa0, 0xe4, 0x02, 0x20] => (v.len() == 36)
+				.then(|| Self::Blake2b256(H256::from_slice(&v[4..])))
+				.ok_or(Error::BadLength),
 			_ => Err(Error::InvalidPrefix),
 		}
-	}
-}
-
-impl UncheckedFrom<Vec<u8>> for Multikey {
-	fn unchecked_from(v: Vec<u8>) -> Self {
-		Self(v)
 	}
 }
 
@@ -239,22 +176,40 @@ impl MaxEncodedLen for Multikey {
 
 impl Encode for Multikey {
 	fn size_hint(&self) -> usize {
-		match self.kind() {
-			MultikeyKind::Ed25519 => 34,
-			MultikeyKind::Sr25519 => 34,
-			MultikeyKind::Secp256k1 => 35,
-			MultikeyKind::P256 => 35,
-			MultikeyKind::Blake2b256 => 36,
-			_ => 0,
+		match self {
+			Multikey::Ed25519(_) => 34,
+			Multikey::Sr25519(_) => 34,
+			Multikey::Secp256k1(_) => 35,
+			Multikey::P256(_) => 35,
+			Multikey::Blake2b256(_) => 36,
 		}
 	}
 
 	fn encode(&self) -> Vec<u8> {
-		self.0.clone()
-	}
-
-	fn using_encoded<R, F: FnOnce(&[u8]) -> R>(&self, f: F) -> R {
-		f(&self.0)
+		let mut res = Vec::with_capacity(self.size_hint());
+		match self {
+			Self::Ed25519(k) => {
+				res.extend_from_slice(multicodec::ED25519_PUB);
+				res.extend_from_slice(k.as_ref());
+			},
+			Self::Sr25519(k) => {
+				res.extend_from_slice(multicodec::SR25519_PUB);
+				res.extend_from_slice(k.as_ref());
+			},
+			Self::Secp256k1(k) => {
+				res.extend_from_slice(multicodec::SECP256K1_PUB);
+				res.extend_from_slice(k.as_ref());
+			},
+			Self::P256(k) => {
+				res.extend_from_slice(multicodec::P256_PUB);
+				res.extend_from_slice(k.as_ref());
+			},
+			Self::Blake2b256(k) => {
+				res.extend_from_slice(multicodec::BLAKE2B_256);
+				res.extend_from_slice(k.as_ref());
+			},
+		}
+		res
 	}
 }
 
@@ -274,59 +229,37 @@ impl Decode for Multikey {
 		res[0] = byte;
 		input.read(&mut res[1..])?;
 
-		let res = Multikey(res);
-		match res.kind() {
-			MultikeyKind::Unknown => Err("Could not decode Multikey".into()),
-			_ => Ok(res),
-		}
+		Multikey::try_from(res).map_err(|_| "Could not decode Multikey".into())
 	}
 }
 
 impl From<ed25519::Public> for Multikey {
 	fn from(k: ed25519::Public) -> Self {
-		let mut v: Vec<u8> =
-			Vec::with_capacity(multicodec::ED25519_PUB.len() + ed25519::Public::LEN);
-		v.extend_from_slice(multicodec::ED25519_PUB);
-		v.extend_from_slice(k.as_ref());
-		Self(v)
+		Self::Ed25519(k)
 	}
 }
 
 impl From<sr25519::Public> for Multikey {
 	fn from(k: sr25519::Public) -> Self {
-		let mut v: Vec<u8> =
-			Vec::with_capacity(multicodec::SR25519_PUB.len() + sr25519::Public::LEN);
-		v.extend_from_slice(multicodec::SR25519_PUB);
-		v.extend_from_slice(k.as_ref());
-		Self(v)
+		Self::Sr25519(k)
 	}
 }
 
 impl From<ecdsa::Public> for Multikey {
 	fn from(k: ecdsa::Public) -> Self {
-		let mut v: Vec<u8> =
-			Vec::with_capacity(multicodec::SECP256K1_PUB.len() + ecdsa::Public::LEN);
-		v.extend_from_slice(multicodec::SECP256K1_PUB);
-		v.extend_from_slice(k.as_ref());
-		Self(v)
+		Self::Secp256k1(k)
 	}
 }
 
 impl From<p256::Public> for Multikey {
 	fn from(k: p256::Public) -> Self {
-		let mut v: Vec<u8> = Vec::with_capacity(multicodec::P256_PUB.len() + p256::Public::LEN);
-		v.extend_from_slice(multicodec::P256_PUB);
-		v.extend_from_slice(k.as_ref());
-		Self(v)
+		Self::P256(k)
 	}
 }
 
 impl From<H256> for Multikey {
 	fn from(hash: H256) -> Self {
-		let mut v: Vec<u8> = Vec::with_capacity(multicodec::BLAKE2B_256.len() + H256::len_bytes());
-		v.extend_from_slice(multicodec::BLAKE2B_256);
-		v.extend_from_slice(hash.as_ref());
-		Self(v)
+		Self::Blake2b256(hash)
 	}
 }
 
@@ -334,54 +267,50 @@ impl TryFrom<AccountId32> for Multikey {
 	type Error = ();
 
 	fn try_from(v: AccountId32) -> Result<Self, Self::Error> {
-		v.source().ok_or(()).cloned()
+		v.get().clone().ok_or(())
 	}
 }
 
 impl TryFrom<Multikey> for ed25519::Public {
-	type Error = PublicError;
+	type Error = Error;
 
-	fn try_from(v: Multikey) -> Result<Self, Self::Error> {
-		if v.kind() == MultikeyKind::Ed25519 {
-			ed25519::Public::try_from(&v.0[2..]).map_err(|_| PublicError::BadLength)
-		} else {
-			Err(PublicError::InvalidPrefix)
+	fn try_from(k: Multikey) -> Result<Self, Self::Error> {
+		match k {
+			Multikey::Ed25519(k) => Ok(k),
+			_ => Err(Error::InvalidConversion),
 		}
 	}
 }
 
 impl TryFrom<Multikey> for sr25519::Public {
-	type Error = PublicError;
+	type Error = Error;
 
-	fn try_from(v: Multikey) -> Result<Self, Self::Error> {
-		if v.kind() == MultikeyKind::Sr25519 {
-			sr25519::Public::try_from(&v.0[2..]).map_err(|_| PublicError::BadLength)
-		} else {
-			Err(PublicError::InvalidPrefix)
+	fn try_from(k: Multikey) -> Result<Self, Self::Error> {
+		match k {
+			Multikey::Sr25519(k) => Ok(k),
+			_ => Err(Error::InvalidConversion),
 		}
 	}
 }
 
 impl TryFrom<Multikey> for ecdsa::Public {
-	type Error = PublicError;
+	type Error = Error;
 
-	fn try_from(v: Multikey) -> Result<Self, Self::Error> {
-		if v.kind() == MultikeyKind::Secp256k1 {
-			ecdsa::Public::try_from(&v.0[2..]).map_err(|_| PublicError::BadLength)
-		} else {
-			Err(PublicError::InvalidPrefix)
+	fn try_from(k: Multikey) -> Result<Self, Self::Error> {
+		match k {
+			Multikey::Secp256k1(k) => Ok(k),
+			_ => Err(Error::InvalidConversion),
 		}
 	}
 }
 
 impl TryFrom<Multikey> for p256::Public {
-	type Error = PublicError;
+	type Error = Error;
 
-	fn try_from(v: Multikey) -> Result<Self, Self::Error> {
-		if v.kind() == MultikeyKind::P256 {
-			p256::Public::try_from(&v.0[2..]).map_err(|_| PublicError::BadLength)
-		} else {
-			Err(PublicError::InvalidPrefix)
+	fn try_from(k: Multikey) -> Result<Self, Self::Error> {
+		match k {
+			Multikey::P256(k) => Ok(k),
+			_ => Err(Error::InvalidConversion),
 		}
 	}
 }
@@ -391,17 +320,18 @@ impl sp_std::str::FromStr for Multikey {
 	type Err = ();
 
 	fn from_str(s: &str) -> Result<Self, Self::Err> {
-		let addr = if s.starts_with('u') {
-			Multikey(Base64UrlUnpadded::decode_vec(&s[1..]).map_err(|_| ())?)
+		if s.starts_with('u') {
+			Base64UrlUnpadded::decode_vec(&s[1..])
+				.map(Multikey::try_from)
+				.map_err(|_| ())?
+				.map_err(|_| ())
 		} else if s.starts_with("0x") {
-			Multikey(array_bytes::hex2bytes(&s[2..]).map_err(|_| ())?)
+			array_bytes::hex2bytes(&s[2..])
+				.map(Multikey::try_from)
+				.map_err(|_| ())?
+				.map_err(|_| ())
 		} else {
-			return Err(())
-		};
-
-		match addr.kind() {
-			MultikeyKind::Unknown => Err(()),
-			_ => Ok(addr),
+			Err(())
 		}
 	}
 }
@@ -409,14 +339,14 @@ impl sp_std::str::FromStr for Multikey {
 #[cfg(feature = "std")]
 impl std::fmt::Display for Multikey {
 	fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-		write!(f, "u{}", Base64UrlUnpadded::encode_string(self.as_ref()))
+		write!(f, "u{}", Base64UrlUnpadded::encode_string(&self.encode()))
 	}
 }
 
 impl sp_std::fmt::Debug for Multikey {
 	#[cfg(feature = "std")]
 	fn fmt(&self, f: &mut sp_std::fmt::Formatter) -> sp_std::fmt::Result {
-		write!(f, "u{}", Base64UrlUnpadded::encode_string(self.as_ref()))
+		write!(f, "u{}", Base64UrlUnpadded::encode_string(&self.encode()))
 	}
 
 	#[cfg(not(feature = "std"))]
@@ -438,12 +368,12 @@ mod tests {
 		)
 		.unwrap();
 
-		let addr = Multikey::from_str("u5wECOvHh76TR4a1cueOWfpjpAdr803xEzwv7bCFpl_XuUd8");
-		assert!(addr.is_ok());
+		let key = Multikey::from_str("u5wECOvHh76TR4a1cueOWfpjpAdr803xEzwv7bCFpl_XuUd8");
+		assert!(key.is_ok());
 
-		let addr = addr.unwrap();
-		assert_eq!(&addr.0[..], raw);
-		assert_eq!(addr.to_string(), "u5wECOvHh76TR4a1cueOWfpjpAdr803xEzwv7bCFpl_XuUd8");
+		let key = key.unwrap();
+		assert_eq!(key.encode(), raw);
+		assert_eq!(key.to_string(), "u5wECOvHh76TR4a1cueOWfpjpAdr803xEzwv7bCFpl_XuUd8");
 	}
 
 	#[test]
@@ -453,8 +383,8 @@ mod tests {
 		)
 		.unwrap();
 		let pubkey = ecdsa::Public::try_from(&pubkey[..]).unwrap();
-		let addr = Multikey::from(pubkey);
-		assert_eq!(addr.kind(), MultikeyKind::Secp256k1);
+		let key = Multikey::from(pubkey);
+		assert!(matches!(key, Multikey::Secp256k1(_)));
 	}
 
 	#[test]
@@ -463,15 +393,15 @@ mod tests {
 			"e701023af1e1efa4d1e1ad5cb9e3967e98e901dafcd37c44cf0bfb6c216997f5ee51df",
 		)
 		.unwrap();
-		let addr = Multikey(raw.clone());
-		assert_eq!(addr.kind(), MultikeyKind::Secp256k1);
+		let key = Multikey::try_from(raw.clone()).expect("multikey should be created; qed");
+		assert!(matches!(key, Multikey::Secp256k1(_)));
 
-		let encoded = addr.encode();
+		let encoded = key.encode();
 		assert_eq!(encoded, raw);
 
 		let mut io = IoReader(&encoded[..]);
 		let decoded = Multikey::decode(&mut io);
 		assert!(decoded.is_ok());
-		assert_eq!(decoded.unwrap(), addr);
+		assert_eq!(decoded.unwrap(), key);
 	}
 }
