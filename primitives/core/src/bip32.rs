@@ -34,13 +34,14 @@ use regex::Regex;
 #[cfg(feature = "std")]
 use sp_core::crypto::SecretStringError;
 
+// TODO: Replace with `LazyLock` when it's available.
 #[cfg(feature = "std")]
-lazy_static::lazy_static! {
-	static ref PATH_REGEX: Regex = Regex::new(r"^m(?P<path>(/\d+'?)*)$")
-		.expect("constructed from known-good static value; qed");
-	static ref JUNCTION_REGEX: Regex = Regex::new(r"/([^/']+'?)")
-		.expect("constructed from known-good static value; qed");
-}
+use std::sync::OnceLock;
+
+#[cfg(feature = "std")]
+static PATH_REGEX: OnceLock<Regex> = OnceLock::new();
+#[cfg(feature = "std")]
+static JUNCTION_REGEX: OnceLock<Regex> = OnceLock::new();
 
 #[cfg(feature = "full_crypto")]
 #[cfg_attr(feature = "std", derive(Debug))]
@@ -56,17 +57,26 @@ impl DeriveJunction {
 
 	#[cfg(feature = "std")]
 	pub fn parse(path: &str) -> Result<Vec<Self>, SecretStringError> {
-		let cap = PATH_REGEX.captures(path).ok_or(SecretStringError::InvalidPath)?;
+		let cap = PATH_REGEX
+			.get_or_init(|| {
+				Regex::new(r"^m(?P<path>(/\d+'?)*)$")
+					.expect("constructed from known-good static value; qed")
+			})
+			.captures(path)
+			.ok_or(SecretStringError::InvalidPath)?;
 
-		JUNCTION_REGEX.captures_iter(&cap["path"]).try_fold(vec![], |mut junctions, j| {
-			match Self::try_from(&j[1]) {
+		JUNCTION_REGEX
+			.get_or_init(|| {
+				Regex::new(r"/([^/']+'?)").expect("constructed from known-good static value; qed")
+			})
+			.captures_iter(&cap["path"])
+			.try_fold(vec![], |mut junctions, j| match Self::try_from(&j[1]) {
 				Ok(j) => {
 					junctions.push(j);
 					Ok(junctions)
 				},
 				Err(_) => Err(SecretStringError::InvalidPath),
-			}
-		})
+			})
 	}
 
 	pub fn unwrap(self) -> [u8; 4] {
