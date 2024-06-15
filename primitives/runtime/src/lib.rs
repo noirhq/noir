@@ -35,7 +35,7 @@ pub use multikey::{Multikey, MultikeyKind};
 #[cfg(feature = "serde")]
 pub use serde::{Deserialize, Serialize};
 
-use np_crypto::{p256, webauthn};
+use np_core::{p256, webauthn};
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use sp_core::{ecdsa, ed25519, sr25519};

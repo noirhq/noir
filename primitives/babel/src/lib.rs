@@ -198,7 +198,7 @@ mod tests {
 	use super::*;
 
 	fn test_public() -> ecdsa::Public {
-		use np_crypto::bip32::{secp256k1::ExtendedPrivateKey, DeriveJunction};
+		use np_core::bip32::{secp256k1::ExtendedPrivateKey, DeriveJunction};
 		use sp_core::{crypto::DEV_PHRASE, Pair};
 
 		let path = DeriveJunction::parse("m/44'/60'/0'/0/0").unwrap();

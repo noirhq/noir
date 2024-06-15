@@ -18,7 +18,7 @@
 //! Interoperable public key representation.
 
 use crate::AccountId32;
-use np_crypto::{ecdsa::EcdsaExt, p256};
+use np_core::{ecdsa::EcdsaExt, p256};
 use parity_scale_codec::{Decode, Encode, EncodeLike, Error as CodecError, Input, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_core::{

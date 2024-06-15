@@ -17,7 +17,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 use crate::Multikey;
-use np_crypto::ecdsa::EcdsaExt;
+use np_core::ecdsa::EcdsaExt;
 use parity_scale_codec::{Decode, Encode, EncodeLike, Error, Input, MaxEncodedLen};
 use scale_info::{Type, TypeInfo};
 #[cfg(feature = "serde")]

@@ -1,5 +1,5 @@
 [package]
-name = "np-crypto"
+name = "np-core"
 version = { workspace = true }
 license = "Apache-2.0"
 

@@ -16,7 +16,7 @@ serde = { workspace = true, features = ["derive"], optional = true }
 thiserror = { workspace = true, optional = true }
 
 # noir
-np-crypto = { workspace = true }
+np-core = { workspace = true }
 np-io = { workspace = true }
 
 # substrate
@@ -37,7 +37,7 @@ std = [
 	"parity-scale-codec/std",
 	"scale-info/std",
 	"serde/std",
-	"np-crypto/std",
+	"np-core/std",
 	"np-io/std",
 	"sp-core/std",
 	"sp-io/std",

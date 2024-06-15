@@ -19,7 +19,7 @@
 //! Adapter types for EVM pallet compatibility.
 
 use frame_support::dispatch::RawOrigin;
-use np_crypto::ecdsa::EcdsaExt;
+use np_core::ecdsa::EcdsaExt;
 use np_runtime::{Multikey, MultikeyKind};
 use pallet_alias::AccountAlias;
 use pallet_evm::{AddressMapping, EnsureAddressOrigin};

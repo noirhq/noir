@@ -9,7 +9,7 @@ repository = { workspace = true }
 
 [dependencies]
 array-bytes = { workspace = true, optional = true }
-np-crypto = { workspace = true }
+np-core = { workspace = true }
 np-io = { workspace = true }
 parity-scale-codec = { workspace = true }
 scale-info = { workspace = true }
@@ -23,7 +23,7 @@ subtle-encoding = { workspace = true, optional = true }
 default = ["std"]
 std = [
 	"array-bytes",
-	"np-crypto/std",
+	"np-core/std",
 	"np-io/std",
 	"parity-scale-codec/std",
 	"scale-info/std",

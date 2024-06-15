@@ -46,7 +46,7 @@ use frame_support::{
 	},
 };
 pub use noir_core_primitives::{AccountId, Balance, BlockNumber, Hash, Nonce, Signature};
-use np_crypto::ecdsa::EcdsaExt;
+use np_core::ecdsa::EcdsaExt;
 use pallet_cosmos::handler::cosm::MsgHandler;
 use pallet_ethereum::{
 	Call::transact, PostLogContent, Transaction as EthereumTransaction, TransactionAction,
