@@ -16,7 +16,7 @@ scale-info = { workspace = true }
 
 frame-support = { workspace = true }
 frame-system = { workspace = true }
-np-crypto = { workspace = true }
+np-core = { workspace = true }
 np-runtime = { workspace = true }
 sp-runtime = { workspace = true }
 sp-std = { workspace = true }
@@ -28,7 +28,7 @@ std = [
 	"scale-info/std",
 	"frame-support/std",
 	"frame-system/std",
-	"np-crypto/std",
+	"np-core/std",
 	"np-runtime/std",
 	"sp-runtime/std",
 	"sp-std/std",

@@ -18,7 +18,7 @@
 
 //! Adapter types for Cosmos pallet compatibility.
 
-use np_crypto::ecdsa::EcdsaExt;
+use np_core::ecdsa::EcdsaExt;
 use pallet_alias::AccountAlias;
 use pallet_cosmos::AddressMapping;
 use sp_core::{Hasher, H160, H256};
