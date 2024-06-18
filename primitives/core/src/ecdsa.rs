@@ -21,7 +21,7 @@
 pub fn secp256k1_pubkey_serialize(pubkey: &[u8; 33]) -> Option<[u8; 64]> {
 	#[cfg(not(feature = "std"))]
 	{
-		use k256::PublicKey;
+		use k256::{elliptic_curve::sec1::ToEncodedPoint, PublicKey};
 
 		let pubkey = PublicKey::from_sec1_bytes(&pubkey[..]).ok()?;
 		<[u8; 64]>::try_from(&pubkey.to_encoded_point(false).as_bytes()[1..]).ok()

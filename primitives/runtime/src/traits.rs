@@ -15,7 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use sp_runtime::traits::{IdentifyAccount, Lazy};
+pub use sp_runtime::traits::{IdentifyAccount, Lazy};
 
 /// Means of signature verification.
 pub trait VerifyMut {

@@ -34,6 +34,7 @@ pub use multikey::Multikey;
 
 #[cfg(feature = "serde")]
 pub use serde::{Deserialize, Serialize};
+pub use sp_runtime;
 
 use crate::traits::{Checkable, VerifyMut};
 use np_core::{p256, webauthn};
@@ -49,7 +50,7 @@ use sp_std::prelude::*;
 /// Signature verify that can work with any known signature types.
 #[derive(Eq, PartialEq, Clone, Encode, Decode, RuntimeDebug, TypeInfo)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub enum AuthenticationProof {
+pub enum AuthorizationProof {
 	/// A Ed25519 signature.
 	Ed25519(ed25519::Signature),
 	/// A Sr25519 signature.
@@ -62,7 +63,7 @@ pub enum AuthenticationProof {
 	WebAuthn(webauthn::Signature),
 }
 
-impl Verify for AuthenticationProof {
+impl Verify for AuthorizationProof {
 	type Signer = Multikey;
 
 	fn verify<L: Lazy<[u8]>>(&self, mut msg: L, signer: &AccountId32) -> bool {
@@ -94,7 +95,7 @@ impl Verify for AuthenticationProof {
 				}
 			},
 			(Self::WebAuthn(ref sig), who) => {
-				match np_io::crypto::webauthn_recover(&sig, msg.get()) {
+				match np_io::crypto::webauthn_recover(sig, msg.get()) {
 					Some(pubkey) =>
 						&sp_io::hashing::blake2_256(pubkey.as_ref()) ==
 							<dyn AsRef<[u8; 32]>>::as_ref(&who),
@@ -105,7 +106,7 @@ impl Verify for AuthenticationProof {
 	}
 }
 
-impl VerifyMut for AuthenticationProof {
+impl VerifyMut for AuthorizationProof {
 	type Signer = Multikey;
 
 	fn verify_mut<L: Lazy<[u8]>>(&self, mut msg: L, signer: &mut AccountId32) -> bool {
@@ -133,7 +134,7 @@ impl VerifyMut for AuthenticationProof {
 				}
 			},
 			(Self::WebAuthn(ref sig), who) => {
-				match np_io::crypto::webauthn_recover(&sig, msg.get()) {
+				match np_io::crypto::webauthn_recover(sig, msg.get()) {
 					Some(pubkey) => who.check(webauthn::Public::from_raw(pubkey)),
 					_ => false,
 				}
@@ -152,7 +153,7 @@ mod tests {
 		let (pair, _) = ecdsa::Pair::generate();
 		let msg = b"Heal the world, make it a better place";
 		let signature = pair.sign(msg);
-		let proof = AuthenticationProof::Secp256k1(signature);
+		let proof = AuthorizationProof::Secp256k1(signature);
 		let mut signer = AccountId32::from(pair.public());
 		assert!(proof.verify_mut(&msg[..], &mut signer));
 		let key = signer.get().clone().unwrap();

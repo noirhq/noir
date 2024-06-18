@@ -8,27 +8,28 @@ edition = { workspace = true }
 repository = { workspace = true }
 
 [dependencies]
-array-bytes = { version = "6.2.3", optional = true }
+array-bytes = { version = "6.2.3" }
 base64ct = { version = "1.6.0", optional = true }
-ecdsa = { version = "0.16.9" }
+bech32 = { version = "0.11.0", default-features = false, optional = true }
+ecdsa = { version = "0.16.9", default-features = false }
 hmac = { version = "0.12.1", optional = true }
 k256 = { version = "0.13.3", default-features = false, features = ["alloc", "ecdsa"] }
-parity-scale-codec = { version = "3.6.12", default-features = false, features = ["derive", "max-encoded-len"] }
+parity-scale-codec = { version = "3.6.12", default-features = false, features = ["derive"] }
 p256 = { version = "0.13.2", default-features = false, features = ["alloc", "ecdsa"] }
 regex = { version = "1.7.1", optional = true }
 scale-info = { version = "2.11.3", default-features = false, features = ["derive"] }
 secp256k1 = { version = "0.28.2", features = ["alloc"], optional = true }
-serde = { version = "1.0.203", features = ["derive"], optional = true }
+serde = { version = "1.0.203", default-features = false, features = ["derive"], optional = true }
 serde_json = { version = "1.0.117", optional = true }
 sha2 = { version = "0.10.8", optional = true }
 substrate-bip39 = { version = "0.6.0", optional = true }
-subtle-encoding = { version = "0.5.1", features = ["bech32-preview"], optional = true }
 tiny-bip39 = { version = "1.0.0", optional = true }
 url = { version = "2.5.1", optional = true }
 zeroize = { version = "1.8.1", features = ["derive"], optional = true }
 
 sp-core = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.11.0", default-features = false }
 sp-runtime-interface = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.11.0", default-features = false }
+sp-runtime = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.11.0", default-features = false }
 sp-std = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.11.0", default-features = false }
 
 # workspace crates
@@ -47,10 +48,12 @@ std = [
 	"regex",
 	"scale-info/std",
 	"secp256k1/global-context",
-	"serde",
+	"serde/std",
 	"serde_json/std",
 	"sha2/std",
 	"sp-core/std",
+	"sp-runtime-interface/std",
+	"sp-runtime/std",
 	"sp-std/std",
 	"substrate-bip39",
 	"tiny-bip39",
@@ -58,9 +61,8 @@ std = [
 ]
 serde = [
 	"dep:serde",
-	"array-bytes",
+	"bech32",
 	"sp-core/serde",
-	"subtle-encoding",
 ]
 full_crypto = [
 	"base64ct",

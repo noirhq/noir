@@ -24,7 +24,7 @@ use scale_info::TypeInfo;
 use sp_core::{ecdsa, ed25519, sr25519, H256};
 use sp_runtime::traits::IdentifyAccount;
 #[cfg(not(feature = "std"))]
-use sp_std::vec::Vec;
+use sp_std::prelude::*;
 
 #[cfg(feature = "serde")]
 use base64ct::{Base64UrlUnpadded, Encoding};
@@ -140,7 +140,7 @@ impl TryFrom<&[u8]> for Multikey {
 	type Error = Error;
 
 	fn try_from(data: &[u8]) -> Result<Self, Self::Error> {
-		Ok(Self::try_from(Vec::from(data))?)
+		Self::try_from(Vec::from(data))
 	}
 }
 
@@ -148,9 +148,10 @@ impl TryFrom<Vec<u8>> for Multikey {
 	type Error = Error;
 
 	fn try_from(v: Vec<u8>) -> Result<Self, Self::Error> {
-		if v.len() > 0 && v.len() < 34 {
+		if v.len() < 34 {
 			return Err(Error::BadLength);
 		}
+
 		match &v[0..4] {
 			[0xe7, 0x01, ..] =>
 				ecdsa::Public::try_from(&v[2..]).map_err(|_| Error::BadLength).map(Into::into),
@@ -224,8 +225,7 @@ impl Decode for Multikey {
 			0xa0 => 36,
 			_ => return Err("unexpected first byte decoding Multikey".into()),
 		};
-		let mut res = Vec::new();
-		res.resize(expected_len, 0);
+		let mut res = vec![0; expected_len];
 		res[0] = byte;
 		input.read(&mut res[1..])?;
 
@@ -320,12 +320,12 @@ impl sp_std::str::FromStr for Multikey {
 	type Err = ();
 
 	fn from_str(s: &str) -> Result<Self, Self::Err> {
-		if s.starts_with('u') {
-			Base64UrlUnpadded::decode_vec(&s[1..])
+		if let Some(s) = s.strip_prefix('u') {
+			Base64UrlUnpadded::decode_vec(&s[..])
 				.map(Multikey::try_from)
 				.map_err(|_| ())?
 				.map_err(|_| ())
-		} else if s.starts_with("0x") {
+		} else if let Some(s) = s.strip_prefix("0x") {
 			array_bytes::hex2bytes(&s[2..])
 				.map(Multikey::try_from)
 				.map_err(|_| ())?

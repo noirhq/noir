@@ -17,11 +17,11 @@
 
 //! Cryptography extensions for Noir.
 
-#![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
 
 mod crypto_bytes;
 
+pub mod bech32;
 pub mod bip32;
 pub mod crypto;
 pub mod ecdsa;
