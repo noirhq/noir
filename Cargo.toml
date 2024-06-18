@@ -2,14 +2,11 @@
 resolver = "2"
 
 members = [
-	#"core-primitives",
 	"frame/alias",
-	#"node",
 	"primitives/core",
 	"primitives/crypto/hashing",
 	"primitives/io",
 	"primitives/runtime",
-	#"runtime",
 ]
 
 [workspace.package]
@@ -48,8 +45,6 @@ url = "2.5.0"
 zeroize = { version = "1.5.7", default-features = false }
 
 # noir
-noir-core-primitives = { path = "core-primitives", default-features = false }
-noir-runtime = { path = "runtime", default-features = false }
 np-core = { path = "primitives/core", default-features = false }
 np-crypto-hashing = { path = "primitives/crypto/hashing", default-features = false }
 np-io = { path = "primitives/io", default-features = false }
