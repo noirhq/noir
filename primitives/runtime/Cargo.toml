@@ -8,25 +8,24 @@ edition = { workspace = true }
 repository = { workspace = true }
 
 [dependencies]
-array-bytes = { workspace = true, optional = true }
-base64ct = { workspace = true, optional = true }
-parity-scale-codec = { workspace = true, features = ["derive", "max-encoded-len"] }
-scale-info = { workspace = true, features = ["derive"] }
-serde = { workspace = true, features = ["derive"], optional = true }
-thiserror = { workspace = true, optional = true }
+array-bytes = { version = "6.2.3", optional = true }
+base64ct = { version = "1.6.0", optional = true }
+parity-scale-codec = { version = "3.6.12", default-features = false, features = ["derive", "max-encoded-len"] }
+scale-info = { version = "2.11.3", features = ["derive"] }
+serde = { version = "1.0.203", features = ["derive"], optional = true }
+thiserror = { version = "1.0.61", optional = true }
 
-# noir
+frame-support = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.11.0", default-features = false }
+sp-core = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.11.0", default-features = false }
+sp-io = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.11.0", default-features = false }
+sp-runtime = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.11.0", default-features = false }
+sp-runtime-interface = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.11.0", default-features = false }
+sp-std = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.11.0", default-features = false }
+
+# workspace crates
+fp-self-contained = { workspace = true }
 np-core = { workspace = true }
 np-io = { workspace = true }
-
-# substrate
-fp-self-contained = { workspace = true }
-frame-support = { workspace = true }
-sp-core = { workspace = true }
-sp-io = { workspace = true }
-sp-runtime = { workspace = true }
-sp-runtime-interface = { workspace = true }
-sp-std = { workspace = true }
 
 [features]
 default = ["std"]
@@ -50,4 +49,5 @@ serde = [
 	"array-bytes",
 	"base64ct/alloc",
 ]
+runtime-benchmarks = []
 try-runtime = []
