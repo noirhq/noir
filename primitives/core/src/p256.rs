@@ -121,8 +121,7 @@ impl Signature {
 
 		VerifyingKey::recover_from_prehash(&message[..], &sig, rid)
 			.ok()
-			.map(|pubkey| Public::from_slice(pubkey.to_encoded_point(true).as_bytes()).ok())
-			.flatten()
+			.and_then(|pubkey| Public::from_slice(pubkey.to_encoded_point(true).as_bytes()).ok())
 	}
 }
 

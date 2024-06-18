@@ -20,7 +20,9 @@
 #![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use np_core::{ecdsa, p256, webauthn};
+#[cfg(feature = "std")]
+use np_core::ecdsa;
+use np_core::{p256, webauthn};
 use sp_runtime_interface::runtime_interface;
 
 /// Interfaces for working with crypto related types from within the runtime.

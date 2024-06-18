@@ -17,6 +17,8 @@
 
 //! Hashing functions.
 
+#![cfg_attr(not(feature = "std"), no_std)]
+
 use ripemd::{Digest, Ripemd160};
 
 pub use sp_crypto_hashing::*;

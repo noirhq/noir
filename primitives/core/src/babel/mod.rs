@@ -17,10 +17,9 @@
 
 //! Noir core types for interoperability.
 
-use crate::crypto::AddressBytes;
+use crate::{bech32::Bech32Codec, crypto::AddressBytes};
 use sp_core::ecdsa;
 
-pub use bech32::Bech32Codec;
 pub use cosmos::CosmosAddress;
 pub use ethereum::EthereumAddress;
 
@@ -58,7 +57,7 @@ pub mod ethereum {
 	#[cfg(feature = "std")]
 	impl std::fmt::Display for EthereumAddress {
 		fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-			let address = array_bytes::bytes2hex("", &self.0);
+			let address = array_bytes::bytes2hex("", self.0);
 			let address_hash = array_bytes::bytes2hex("", sp_core::keccak_256(address.as_bytes()));
 
 			let checksum: String = address.char_indices().fold(
@@ -96,6 +95,7 @@ pub mod cosmos {
 	/// The Cosmos address.
 	pub type CosmosAddress = AddressBytes<ADDRESS_SERIALIZED_SIZE, CosmosTag>;
 
+	#[cfg(feature = "serde")]
 	impl Bech32Codec for CosmosAddress {}
 
 	impl From<ecdsa::Public> for CosmosAddress {
@@ -118,47 +118,6 @@ pub mod cosmos {
 	impl std::fmt::Display for CosmosAddress {
 		fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
 			write!(f, "{}", self.to_bech32())
-		}
-	}
-}
-
-/// Bech32 encoding.
-pub mod bech32 {
-	#[cfg(feature = "serde")]
-	use sp_std::sync::OnceLock;
-	#[cfg(feature = "serde")]
-	use subtle_encoding::bech32;
-
-	/// Default human-readable part for Bech32 encoding.
-	#[cfg(feature = "serde")]
-	static DEFAULT_HRP: OnceLock<String> = OnceLock::new();
-
-	/// Returns default human-readable part for Bech32 encoding.
-	#[cfg(feature = "serde")]
-	pub fn default_bech32_hrp() -> &'static str {
-		DEFAULT_HRP.get_or_init(|| "cosmos".to_string()).as_str()
-	}
-
-	/// Set the default human-readable part for Bech32 encoding.
-	///
-	/// NOTE: This can be called only once.
-	#[cfg(feature = "serde")]
-	pub fn set_default_bech32_hrp(hrp: &str) {
-		let _ = DEFAULT_HRP.set(hrp.to_string());
-	}
-
-	/// Data that can be encoded to/from Bech32.
-	pub trait Bech32Codec: Sized + AsRef<[u8]> + sp_core::ByteArray {
-		/// Returns the bech32 encoded string.
-		#[cfg(feature = "serde")]
-		fn to_bech32_with_hrp<S: AsRef<str>>(&self, hrp: S) -> String {
-			bech32::encode(hrp, &self)
-		}
-
-		/// Returns the bech32 encoded string.
-		#[cfg(feature = "serde")]
-		fn to_bech32(&self) -> String {
-			self.to_bech32_with_hrp(default_bech32_hrp())
 		}
 	}
 }

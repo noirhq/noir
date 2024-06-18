@@ -33,10 +33,8 @@ use sp_core::{
 };
 use sp_io::hashing::blake2_256;
 #[cfg(all(feature = "serde", not(feature = "std")))]
-use sp_std::{
-	alloc::{format, string::String},
-	vec::Vec,
-};
+use sp_std::alloc::{format, string::String};
+use sp_std::vec::Vec;
 
 /// An opaque 32-byte cryptographic identifier.
 ///
@@ -82,7 +80,7 @@ impl Ord for AccountId32 {
 
 impl PartialOrd for AccountId32 {
 	fn partial_cmp(&self, other: &Self) -> Option<sp_std::cmp::Ordering> {
-		self.inner.partial_cmp(&other.inner)
+		Some(self.cmp(other))
 	}
 }
 
@@ -190,13 +188,13 @@ impl From<H256> for AccountId32 {
 
 impl From<ed25519::Public> for AccountId32 {
 	fn from(v: ed25519::Public) -> Self {
-		Self { inner: v.0.clone(), key: Some(v.into()) }
+		Self { inner: v.0, key: Some(v.into()) }
 	}
 }
 
 impl From<sr25519::Public> for AccountId32 {
 	fn from(v: sr25519::Public) -> Self {
-		Self { inner: v.0.clone(), key: Some(v.into()) }
+		Self { inner: v.0, key: Some(v.into()) }
 	}
 }
 
@@ -246,7 +244,7 @@ impl sp_std::fmt::Debug for AccountId32 {
 		}
 
 		#[cfg(not(feature = "serde"))]
-		write!(f, "{}", sp_core::hexdisplay::HexDisplay::from(&self.0))?;
+		write!(f, "{}", sp_core::hexdisplay::HexDisplay::from(&self.inner))?;
 
 		Ok(())
 	}
