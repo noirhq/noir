@@ -8,31 +8,30 @@ edition = { workspace = true }
 repository = { workspace = true }
 
 [dependencies]
-array-bytes = { workspace = true, optional = true }
-base64ct = { workspace = true, optional = true }
-ecdsa = { workspace = true }
-hmac = { workspace = true, optional = true }
-k256 = { workspace = true, features = ["alloc", "arithmetic"] }
-parity-scale-codec = { workspace = true, features = ["derive", "max-encoded-len"] }
-p256 = { workspace = true, features = ["arithmetic"] }
-regex = { workspace = true, optional = true }
-ripemd = { workspace = true, optional = true }
-scale-info = { workspace = true, features = ["derive"] }
-secp256k1 = { workspace = true, optional = true }
-serde = { workspace = true, features = ["derive"], optional = true }
-serde_json = { workspace = true, optional = true }
-sha2 = { workspace = true, optional = true }
-substrate-bip39 = { workspace = true, optional = true }
-subtle-encoding = { workspace = true, features = ["bech32-preview"], optional = true }
-tiny-bip39 = { workspace = true, optional = true }
-url = { workspace = true, optional = true }
-zeroize = { workspace = true, optional = true }
+array-bytes = { version = "6.2.3", optional = true }
+base64ct = { version = "1.6.0", optional = true }
+ecdsa = { version = "0.16.9" }
+hmac = { version = "0.12.1", optional = true }
+k256 = { version = "0.13.3", default-features = false, features = ["alloc", "ecdsa"] }
+parity-scale-codec = { version = "3.6.12", default-features = false, features = ["derive", "max-encoded-len"] }
+p256 = { version = "0.13.2", default-features = false, features = ["alloc", "ecdsa"] }
+regex = { version = "1.7.1", optional = true }
+scale-info = { version = "2.11.3", default-features = false, features = ["derive"] }
+secp256k1 = { version = "0.28.2", features = ["alloc"], optional = true }
+serde = { version = "1.0.203", features = ["derive"], optional = true }
+serde_json = { version = "1.0.117", optional = true }
+sha2 = { version = "0.10.8", optional = true }
+substrate-bip39 = { version = "0.6.0", optional = true }
+subtle-encoding = { version = "0.5.1", features = ["bech32-preview"], optional = true }
+tiny-bip39 = { version = "1.0.0", optional = true }
+url = { version = "2.5.1", optional = true }
+zeroize = { version = "1.8.1", features = ["derive"], optional = true }
 
-# substrate
-sp-core = { workspace = true }
-sp-runtime-interface = { workspace = true }
-sp-std = { workspace = true }
+sp-core = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.11.0", default-features = false }
+sp-runtime-interface = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.11.0", default-features = false }
+sp-std = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.11.0", default-features = false }
 
+# workspace crates
 np-crypto-hashing = { workspace = true }
 
 [features]

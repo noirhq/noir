@@ -17,16 +17,6 @@
 
 //! Simple ECDSA secp256k1 API.
 
-use sp_core::H160;
-
-/// Extension trait to sp_core::ecdsa (alternative to frame_support::crypto::ECDSAExt)
-pub trait EcdsaExt {
-	/// Convert to ethereum address, if available.
-	fn to_eth_address(&self) -> Option<H160>;
-	/// Convert to cosmos address, if available.
-	fn to_cosm_address(&self) -> Option<H160>;
-}
-
 /// Decompress secp256k1 public key.
 pub fn secp256k1_pubkey_serialize(pubkey: &[u8; 33]) -> Option<[u8; 64]> {
 	#[cfg(not(feature = "std"))]
@@ -46,4 +36,25 @@ pub fn secp256k1_pubkey_serialize(pubkey: &[u8; 33]) -> Option<[u8; 64]> {
 		res.copy_from_slice(&pubkey.serialize_uncompressed()[1..]);
 		Some(res)
 	}
+}
+
+/// Verify a non-recoverable secp256k1 ECDSA signature (64 bytes).
+#[cfg(feature = "std")]
+pub fn secp256k1_ecdsa_verify(sig: &[u8], msg: &[u8], pub_key: &[u8]) -> bool {
+	use secp256k1::{ecdsa::Signature, Message, PublicKey};
+
+	let sig = match Signature::from_compact(sig) {
+		Ok(v) => v,
+		Err(_) => return false,
+	};
+	let msg = match Message::from_digest_slice(msg) {
+		Ok(v) => v,
+		Err(_) => return false,
+	};
+	let pub_key = match PublicKey::from_slice(pub_key) {
+		Ok(v) => v,
+		Err(_) => return false,
+	};
+
+	sig.verify(&msg, &pub_key).is_ok()
 }
