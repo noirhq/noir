@@ -16,18 +16,13 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use frame_support::weights::Weight;
+/// Link and unlink available aliases.
+pub trait AliasLinker<T: frame_system::Config> {
+	type Error;
 
-pub trait WeightInfo {
-	fn link() -> Weight;
-	fn unlink() -> Weight;
-}
+	/// Creates available aliases to an account.
+	fn link(who: &T::AccountId) -> Result<(), Self::Error>;
 
-impl WeightInfo for () {
-	fn link() -> Weight {
-		10_000.into()
-	}
-	fn unlink() -> Weight {
-		10_000.into()
-	}
+	/// Removes all created aliases to an account.
+	fn unlink(who: &T::AccountId) -> Result<(), Self::Error>;
 }
