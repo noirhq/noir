@@ -20,34 +20,43 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-pub mod weights;
-
 pub use pallet::*;
 
-use crate::weights::WeightInfo;
-use np_core::ecdsa::EcdsaExt;
-use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
-use scale_info::TypeInfo;
-use sp_runtime::{BoundedBTreeSet, DispatchError};
-use sp_std::{collections::btree_set::BTreeSet, prelude::*};
+mod benchmarking;
+pub mod generic;
+mod mock;
+mod tests;
+pub mod traits;
+pub mod weights;
 
-#[cfg_attr(feature = "std", derive(Hash))]
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Encode, Decode, MaxEncodedLen, TypeInfo)]
-pub enum AccountAlias {
-	EthereumAddress([u8; 20]),
-	CosmosAddress([u8; 20]),
-}
+pub use weights::WeightInfo;
+
+use parity_scale_codec::{FullCodec, MaxEncodedLen};
+use scale_info::TypeInfo;
+use sp_runtime::BoundedBTreeSet;
+use sp_std::fmt::Debug;
 
 #[frame_support::pallet]
 pub mod pallet {
-	use super::*;
+	use super::{traits::AliasLinker, *};
 	use frame_support::pallet_prelude::*;
+	use frame_system::pallet_prelude::*;
 
 	/// The module's config trait.
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
 		/// The overarching event type.
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
+
+		/// Alias pointing to an account.
+		type Alias: Clone + Debug + FullCodec + MaxEncodedLen + TypeInfo + Ord;
+
+		/// Link and unlink available aliases.
+		type AliasLinker: AliasLinker<Self>;
+
+		/// Maximum number of aliases an account can have.
+		type MaxAliases: Get<u32>;
+
 		/// Weight information for extrinsics in this pallet.
 		type WeightInfo: WeightInfo;
 	}
@@ -58,74 +67,52 @@ pub mod pallet {
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		/// An ethereum address was published.
-		EthereumAddressPublished { who: T::AccountId, address: [u8; 20] },
-		/// An cosmos address was published.
-		CosmosAddressPublished { who: T::AccountId, address: [u8; 20] },
+		AliasLinked { who: T::AccountId, alias: T::Alias },
+		AliasUnlinked { alias: T::Alias },
 	}
 
 	#[pallet::error]
 	pub enum Error<T> {
-		/// Ethereum address conversion failed.
-		EthereumAddressConversionFailed,
-		/// Cosmos address conversion failed.
-		CosmosAddressConversionFailed,
+		/// Linking alias failed.
+		LinkFailed,
+		/// Unlinking alias failed.
+		UnlinkFailed,
 	}
 
 	#[pallet::storage]
-	#[pallet::getter(fn accountid)]
-	pub type AccountIdOf<T: Config> = StorageMap<_, Blake2_128Concat, AccountAlias, T::AccountId>;
+	pub type AccountIdOf<T: Config> = StorageMap<_, Twox64Concat, T::Alias, T::AccountId>;
 
 	#[pallet::storage]
-	#[pallet::getter(fn aliases)]
 	pub type AccountAliases<T: Config> =
-		StorageMap<_, Blake2_128Concat, T::AccountId, BoundedBTreeSet<AccountAlias, ConstU32<2>>>;
+		StorageMap<_, Twox64Concat, T::AccountId, BoundedBTreeSet<T::Alias, T::MaxAliases>>;
+
+	#[pallet::call]
+	impl<T: Config> Pallet<T> {
+		#[pallet::call_index(0)]
+		#[pallet::weight(T::WeightInfo::link())]
+		pub fn link(origin: OriginFor<T>) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+
+			T::AliasLinker::link(&who).map_err(|_| Error::<T>::LinkFailed)?;
+
+			Ok(())
+		}
+
+		#[pallet::call_index(1)]
+		#[pallet::weight(T::WeightInfo::unlink())]
+		pub fn unlink(origin: OriginFor<T>) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+
+			T::AliasLinker::unlink(&who).map_err(|_| Error::<T>::UnlinkFailed)?;
+
+			Ok(())
+		}
+	}
 }
 
-impl<T: Config> Pallet<T>
-where
-	T::AccountId: EcdsaExt,
-{
+impl<T: Config> Pallet<T> {
 	/// Lookup an AccountAlias to get an Id, if exists.
-	pub fn lookup(alias: &AccountAlias) -> Option<T::AccountId> {
-		AccountIdOf::<T>::get(alias).map(|x| x)
-	}
-
-	pub fn alias_secp256k1(who: &T::AccountId) -> Result<(), DispatchError> {
-		let mut aliases = BTreeSet::new();
-		let eth = who
-			.to_eth_address()
-			.map(|x| x.into())
-			.ok_or(Error::<T>::EthereumAddressConversionFailed)?;
-		let eth_alias = AccountAlias::EthereumAddress(eth);
-		if AccountIdOf::<T>::get(eth_alias).is_none() {
-			AccountIdOf::<T>::insert(eth_alias, who.clone());
-			aliases.insert(eth_alias);
-			Self::deposit_event(Event::<T>::EthereumAddressPublished {
-				who: who.clone(),
-				address: eth,
-			});
-		}
-		let cosm = who
-			.to_cosm_address()
-			.map(|x| x.into())
-			.ok_or(Error::<T>::CosmosAddressConversionFailed)?;
-		let cosm_alias = AccountAlias::CosmosAddress(cosm);
-		if AccountIdOf::<T>::get(cosm_alias).is_none() {
-			AccountIdOf::<T>::insert(cosm_alias, who.clone());
-			aliases.insert(cosm_alias);
-			Self::deposit_event(Event::<T>::CosmosAddressPublished {
-				who: who.clone(),
-				address: cosm,
-			});
-		}
-		if !aliases.is_empty() {
-			AccountAliases::<T>::insert(
-				who,
-				BoundedBTreeSet::try_from(aliases)
-					.map_err(|_| DispatchError::Other("Too many aliases"))?,
-			);
-		}
-		Ok(())
+	pub fn lookup(alias: &T::Alias) -> Option<T::AccountId> {
+		AccountIdOf::<T>::get(alias)
 	}
 }

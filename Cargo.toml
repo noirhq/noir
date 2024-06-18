@@ -3,7 +3,7 @@ resolver = "2"
 
 members = [
 	#"core-primitives",
-	#"frame/alias",
+	"frame/alias",
 	#"node",
 	"primitives/core",
 	"primitives/crypto/hashing",
@@ -57,6 +57,7 @@ np-runtime = { path = "primitives/runtime", default-features = false }
 pallet-alias = { path = "frame/alias", default-features = false }
 
 # substrate
+frame-benchmarking = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.11.0", default-features = false }
 frame-executive = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.11.0", default-features = false }
 frame-support = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.11.0", default-features = false }
 frame-system = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.11.0", default-features = false }

@@ -14,10 +14,13 @@ targets = ["x86_64-unknown-linux-gnu"]
 parity-scale-codec = { workspace = true }
 scale-info = { workspace = true }
 
-frame-support = { workspace = true }
+frame-benchmarking = { workspace = true, optional = true }
+frame-support = { workspace = true, features = ["experimental"] }
 frame-system = { workspace = true }
 np-core = { workspace = true }
 np-runtime = { workspace = true }
+sp-core = { workspace = true }
+sp-io = { workspace = true }
 sp-runtime = { workspace = true }
 sp-std = { workspace = true }
 
@@ -26,11 +29,24 @@ default = ["std"]
 std = [
 	"parity-scale-codec/std",
 	"scale-info/std",
+	"frame-benchmarking?/std",
 	"frame-support/std",
 	"frame-system/std",
 	"np-core/std",
 	"np-runtime/std",
+	"sp-core/std",
+	"sp-io/std",
 	"sp-runtime/std",
 	"sp-std/std",
 ]
-try-runtime = []
+runtime-benchmarks = [
+	"frame-benchmarking/runtime-benchmarks",
+	"frame-support/runtime-benchmarks",
+	"frame-system/runtime-benchmarks",
+	"sp-runtime/runtime-benchmarks",
+]
+try-runtime = [
+	"frame-support/try-runtime",
+	"frame-system/try-runtime",
+	"sp-runtime/try-runtime",
+]
