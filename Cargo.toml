@@ -2,6 +2,9 @@
 resolver = "2"
 
 members = [
+	"chains/noir/core-primitives",
+	"chains/noir/node",
+	"chains/noir/runtime",
 	"frame/alias",
 	"primitives/core",
 	"primitives/crypto/hashing",
