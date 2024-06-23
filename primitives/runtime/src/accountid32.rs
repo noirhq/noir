@@ -19,10 +19,7 @@ use crate::{
 	traits::{Checkable, Property},
 	Multikey,
 };
-use np_core::{
-	babel::{CosmosAddress, EthereumAddress},
-	p256,
-};
+use np_core::{p256, CosmosAddress, EthereumAddress};
 use parity_scale_codec::{Decode, Encode, EncodeLike, Error, Input, MaxEncodedLen};
 use scale_info::{Type, TypeInfo};
 #[cfg(feature = "serde")]

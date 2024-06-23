@@ -10,11 +10,12 @@ repository = { workspace = true }
 [dependencies]
 array-bytes = { version = "6.2.3" }
 base64ct = { version = "1.6.0", optional = true }
-bech32 = { version = "0.11.0", default-features = false, optional = true }
+bech32 = { version = "0.11.0", default-features = false }
 ecdsa = { version = "0.16.9", default-features = false }
 hmac = { version = "0.12.1", optional = true }
 k256 = { version = "0.13.3", default-features = false, features = ["alloc", "ecdsa"] }
 parity-scale-codec = { version = "3.6.12", default-features = false, features = ["derive"] }
+parking_lot = { version = "0.12.3", optional = true }
 p256 = { version = "0.13.2", default-features = false, features = ["alloc", "ecdsa"] }
 regex = { version = "1.7.1", optional = true }
 scale-info = { version = "2.11.3", default-features = false, features = ["derive"] }
@@ -22,6 +23,7 @@ secp256k1 = { version = "0.28.2", features = ["alloc"], optional = true }
 serde = { version = "1.0.203", default-features = false, features = ["derive"], optional = true }
 serde_json = { version = "1.0.117", optional = true }
 sha2 = { version = "0.10.8", optional = true }
+spin = { version = "0.9.8", default-features = false, optional = true }
 substrate-bip39 = { version = "0.6.0", optional = true }
 tiny-bip39 = { version = "1.0.0", optional = true }
 url = { version = "2.5.1", optional = true }
@@ -44,6 +46,7 @@ std = [
 	"hmac/std",
 	"np-crypto-hashing/std",
 	"parity-scale-codec/std",
+	"parking_lot",
 	"p256/std",
 	"regex",
 	"scale-info/std",
@@ -61,8 +64,8 @@ std = [
 ]
 serde = [
 	"dep:serde",
-	"bech32",
 	"sp-core/serde",
+	"spin/spin_mutex",
 ]
 full_crypto = [
 	"base64ct",

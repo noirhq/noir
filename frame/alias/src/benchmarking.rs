@@ -18,10 +18,11 @@
 
 #![cfg(feature = "runtime-benchmarks")]
 
-use super::{generic::tests::dev_key, Pallet as Alias, *};
+use super::{Pallet as Alias, *};
 use frame_benchmarking::v2::*;
 use frame_support::assert_ok;
 use frame_system::RawOrigin;
+use np_core::ethereum::EthereumBip44;
 use sp_core::ecdsa;
 use sp_std::prelude::*;
 
@@ -34,7 +35,7 @@ mod benchmarks {
 
 	#[benchmark]
 	fn link() -> Result<(), BenchmarkError> {
-		let caller: T::AccountId = dev_key().into();
+		let caller: T::AccountId = EthereumBip44::default().public(0).into();
 		whitelist_account!(caller);
 
 		#[extrinsic_call]
@@ -45,7 +46,7 @@ mod benchmarks {
 
 	#[benchmark]
 	fn unlink() -> Result<(), BenchmarkError> {
-		let caller: T::AccountId = dev_key().into();
+		let caller: T::AccountId = EthereumBip44::default().public(0).into();
 		whitelist_account!(caller);
 		assert_ok!(Alias::<T>::link(RawOrigin::Signed(caller.clone()).into()));
 
