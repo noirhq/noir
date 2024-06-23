@@ -28,4 +28,8 @@ pub mod ecdsa;
 pub mod p256;
 pub mod webauthn;
 
-pub mod babel;
+pub mod cosmos;
+pub mod ethereum;
+
+pub use cosmos::CosmosAddress;
+pub use ethereum::EthereumAddress;

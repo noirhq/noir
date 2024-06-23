@@ -20,7 +20,7 @@
 
 use super::*;
 use frame_support::ensure;
-use np_core::babel::{CosmosAddress, EthereumAddress};
+use np_core::{CosmosAddress, EthereumAddress};
 use np_runtime::{traits::Property, AccountId32, Multikey};
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
@@ -92,18 +92,10 @@ where
 #[cfg(any(test, feature = "runtime-benchmarks"))]
 pub mod tests {
 	use super::*;
-	use np_core::bip32::{secp256k1::ExtendedPrivateKey, DeriveJunction};
-	use sp_core::{crypto::DEV_PHRASE, ecdsa, Pair};
-
-	pub fn dev_key() -> ecdsa::Public {
-		let master = ExtendedPrivateKey::from_phrase(DEV_PHRASE, None).unwrap();
-		let path = DeriveJunction::parse("m/44'/60'/0'/0/0").unwrap();
-		let xpriv = master.derive(path.into_iter()).unwrap();
-		ecdsa::Pair::from_seed_slice(xpriv.as_ref()).unwrap().public()
-	}
+	use np_core::ethereum::EthereumBip44;
 
 	pub fn account() -> (AccountId32, AccountAlias, AccountAlias) {
-		let public = dev_key();
+		let public = EthereumBip44::default().public(0);
 		let caller: AccountId32 = public.into();
 		let eth = AccountAlias::Ethereum(public.into());
 		let cosm = AccountAlias::Cosmos(public.into());

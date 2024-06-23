@@ -17,34 +17,39 @@
 
 //! Wrapper for Bech32 encoding and decoding.
 
-#![cfg(feature = "serde")]
+pub use bech32::Hrp;
 
-use bech32::{Bech32, Hrp};
+use bech32::Bech32;
 use sp_runtime::RuntimeString;
-use sp_std::{fmt::Write, vec::Vec};
+#[cfg(feature = "serde")]
+use sp_std::vec::Vec;
 
-/*
+#[cfg(all(feature = "std", feature = "serde"))]
+use parking_lot::Mutex;
+#[cfg(all(not(feature = "std"), feature = "serde"))]
+use spin::Mutex;
+
 /// Default human-readable part for Bech32 encoding.
-static DEFAULT_HRP: OnceLock<String> = OnceLock::new();
-*/
+#[cfg(feature = "serde")]
+static DEFAULT_HRP: Mutex<Hrp> = Mutex::new(Hrp::parse_unchecked("cosmos"));
 
 /// Returns default human-readable part for Bech32 encoding.
-pub fn default_bech32_hrp() -> &'static str {
-	"cosmos"
+#[cfg(feature = "serde")]
+pub fn default_bech32_hrp() -> Hrp {
+	DEFAULT_HRP.lock().clone()
 }
 
-/*
 /// Set the default human-readable part for Bech32 encoding.
-///
-/// NOTE: This can be called only once.
-pub fn set_default_bech32_hrp(hrp: &str) {
-	let _ = DEFAULT_HRP.set(hrp.to_string());
+#[cfg(feature = "serde")]
+pub fn set_default_bech32_hrp(hrp: Hrp) {
+	*DEFAULT_HRP.lock() = hrp;
 }
-*/
 
+#[cfg(feature = "serde")]
 struct VecWriter(pub Vec<u8>);
 
-impl Write for VecWriter {
+#[cfg(feature = "serde")]
+impl sp_std::fmt::Write for VecWriter {
 	fn write_str(&mut self, s: &str) -> core::fmt::Result {
 		self.0.extend_from_slice(s.as_bytes());
 		Ok(())
@@ -54,14 +59,10 @@ impl Write for VecWriter {
 /// Data that can be encoded to/from Bech32.
 pub trait Bech32Codec: Sized + AsRef<[u8]> + sp_core::ByteArray {
 	/// Returns the bech32 encoded string.
-	fn to_bech32_with_hrp<S: AsRef<str>>(&self, hrp: S) -> RuntimeString {
+	#[cfg(feature = "serde")]
+	fn to_bech32_with_hrp(&self, hrp: Hrp) -> RuntimeString {
 		let mut f = VecWriter(Vec::new());
-		bech32::encode_to_fmt::<Bech32, _>(
-			&mut f,
-			Hrp::parse(hrp.as_ref()).unwrap(),
-			self.as_ref(),
-		)
-		.unwrap();
+		bech32::encode_to_fmt::<Bech32, _>(&mut f, hrp, self.as_ref()).unwrap();
 		#[cfg(not(feature = "std"))]
 		{
 			RuntimeString::Owned(f.0)
@@ -74,6 +75,7 @@ pub trait Bech32Codec: Sized + AsRef<[u8]> + sp_core::ByteArray {
 	}
 
 	/// Returns the bech32 encoded string.
+	#[cfg(feature = "serde")]
 	fn to_bech32(&self) -> RuntimeString {
 		self.to_bech32_with_hrp(default_bech32_hrp())
 	}
