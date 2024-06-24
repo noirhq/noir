@@ -17,7 +17,7 @@
 
 //! Cosmos primitives.
 
-use crate::{bech32::Bech32Codec, crypto::AddressBytes};
+use crate::{bitcoin::bech32::Bech32Codec, crypto::AddressBytes};
 use sp_core::ecdsa;
 
 #[doc(hidden)]

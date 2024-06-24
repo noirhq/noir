@@ -15,20 +15,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Cryptography extensions for Noir.
-
-#![cfg_attr(not(feature = "std"), no_std)]
-
-mod crypto_bytes;
-
-pub mod crypto;
-pub mod ecdsa;
-pub mod p256;
-pub mod webauthn;
-
-pub mod bitcoin;
-pub mod cosmos;
-pub mod ethereum;
-
-pub use cosmos::CosmosAddress;
-pub use ethereum::EthereumAddress;
+pub mod bech32;
+pub mod bip32;
+pub mod bip44;
