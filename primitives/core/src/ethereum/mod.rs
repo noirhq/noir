@@ -17,12 +17,8 @@
 
 //! Ethereum primitives.
 
-#[cfg(feature = "full_crypto")]
-use crate::bip32::{secp256k1::ExtendedPrivateKey, DeriveJunction};
 use crate::crypto::AddressBytes;
 use sp_core::ecdsa;
-#[cfg(feature = "full_crypto")]
-use sp_core::Pair;
 
 #[doc(hidden)]
 pub struct EthereumTag;
@@ -79,37 +75,12 @@ impl std::fmt::Display for EthereumAddress {
 }
 
 #[cfg(feature = "full_crypto")]
-pub struct EthereumBip44(pub ExtendedPrivateKey);
+pub type EthereumBip44 = crate::bitcoin::bip44::Bip44<60>;
 
 #[cfg(feature = "full_crypto")]
 impl EthereumBip44 {
-	pub fn from_phrase(phrase: &str, password: Option<&str>) -> Result<Self, ()> {
-		let xpriv = ExtendedPrivateKey::from_phrase(phrase, password)?;
-		let path = DeriveJunction::parse("m/44'/60'/0'/0").unwrap();
-		Ok(Self(xpriv.derive(path.into_iter())?))
-	}
-
-	pub fn pair(&self, index: u32) -> ecdsa::Pair {
-		let path = DeriveJunction::from(index);
-		let xpriv = self.0.derive(sp_std::iter::once(path)).unwrap();
-		ecdsa::Pair::from_seed_slice(xpriv.as_ref()).unwrap()
-	}
-
-	pub fn public(&self, index: u32) -> ecdsa::Public {
-		let path = DeriveJunction::from(index);
-		let xpriv = self.0.derive(sp_std::iter::once(path)).unwrap();
-		ecdsa::Pair::from_seed_slice(xpriv.as_ref()).unwrap().public()
-	}
-
 	pub fn address(&self, index: u32) -> EthereumAddress {
 		EthereumAddress::from(self.public(index))
-	}
-}
-
-#[cfg(feature = "std")]
-impl Default for EthereumBip44 {
-	fn default() -> Self {
-		Self::from_phrase(sp_core::crypto::DEV_PHRASE, None).unwrap()
 	}
 }
 
