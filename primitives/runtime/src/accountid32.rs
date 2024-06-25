@@ -106,10 +106,10 @@ impl MaxEncodedLen for AccountId32 {
 }
 
 impl TypeInfo for AccountId32 {
-	type Identity = <sp_core::crypto::AccountId32 as TypeInfo>::Identity;
+	type Identity = sp_core::crypto::AccountId32;
 
 	fn type_info() -> Type {
-		<sp_core::crypto::AccountId32 as TypeInfo>::type_info()
+		Self::Identity::type_info()
 	}
 }
 
