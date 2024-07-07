@@ -22,10 +22,8 @@ pub use bech32::Hrp;
 
 #[cfg(feature = "serde")]
 use bech32::Bech32;
-#[cfg(feature = "serde")]
-use sp_runtime::RuntimeString;
-#[cfg(feature = "serde")]
-use sp_std::vec::Vec;
+#[cfg(all(not(feature = "std"), feature = "serde"))]
+use sp_std::alloc::string::String;
 
 #[cfg(all(feature = "std", feature = "serde"))]
 use parking_lot::Mutex;
@@ -48,38 +46,17 @@ pub fn set_default_bech32_hrp(hrp: Hrp) {
 	*DEFAULT_HRP.lock() = hrp;
 }
 
-#[cfg(feature = "serde")]
-struct VecWriter(pub Vec<u8>);
-
-#[cfg(feature = "serde")]
-impl sp_std::fmt::Write for VecWriter {
-	fn write_str(&mut self, s: &str) -> core::fmt::Result {
-		self.0.extend_from_slice(s.as_bytes());
-		Ok(())
-	}
-}
-
 /// Data that can be encoded to/from Bech32.
 pub trait Bech32Codec: Sized + AsRef<[u8]> + sp_core::ByteArray {
 	/// Returns the bech32 encoded string.
 	#[cfg(feature = "serde")]
-	fn to_bech32_with_hrp(&self, hrp: Hrp) -> RuntimeString {
-		let mut f = VecWriter(Vec::new());
-		bech32::encode_to_fmt::<Bech32, _>(&mut f, hrp, self.as_ref()).unwrap();
-		#[cfg(not(feature = "std"))]
-		{
-			RuntimeString::Owned(f.0)
-		}
-
-		#[cfg(feature = "std")]
-		{
-			RuntimeString::Owned(String::from_utf8(f.0).unwrap())
-		}
+	fn to_bech32_with_hrp(&self, hrp: Hrp) -> Result<String, ()> {
+		bech32::encode::<Bech32>(hrp, self.as_ref()).map_err(|_| ())
 	}
 
 	/// Returns the bech32 encoded string.
 	#[cfg(feature = "serde")]
-	fn to_bech32(&self) -> RuntimeString {
+	fn to_bech32(&self) -> Result<String, ()> {
 		self.to_bech32_with_hrp(default_bech32_hrp())
 	}
 }

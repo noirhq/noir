@@ -33,9 +33,7 @@ impl Bech32Codec for CosmosAddress {}
 
 impl From<ecdsa::Public> for CosmosAddress {
 	fn from(public: ecdsa::Public) -> Self {
-		let hash = np_crypto_hashing::sha2_256(&public.0);
-		let hash = np_crypto_hashing::ripemd160(&hash);
-		Self::from_raw(hash)
+		Self::from(&public)
 	}
 }
 
@@ -50,7 +48,7 @@ impl From<&ecdsa::Public> for CosmosAddress {
 #[cfg(feature = "std")]
 impl std::fmt::Display for CosmosAddress {
 	fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-		write!(f, "{}", self.to_bech32())
+		write!(f, "{}", self.to_bech32().expect("Valid cosmos address should be displayed; qed"))
 	}
 }
 

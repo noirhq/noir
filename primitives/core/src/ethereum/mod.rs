@@ -31,10 +31,7 @@ pub type EthereumAddress = AddressBytes<ADDRESS_SERIALIZED_SIZE, EthereumTag>;
 
 impl From<ecdsa::Public> for EthereumAddress {
 	fn from(public: ecdsa::Public) -> Self {
-		let uncompressed_public = crate::ecdsa::secp256k1_pubkey_serialize(&public.0, false)
-			.expect("Uncompressed secp256k1 public key; qed");
-		let hash = np_crypto_hashing::keccak_256(&uncompressed_public[1..]);
-		Self::try_from(&hash[12..]).expect("Ethereum address; qed")
+		Self::from(&public)
 	}
 }
 
