@@ -136,18 +136,25 @@ impl TryFrom<&str> for DeriveJunction {
 }
 
 #[cfg(feature = "full_crypto")]
-pub trait Curve: Clone {
+pub trait Curve {
 	fn secret(secret: &[u8]) -> Result<[u8; 32], ()>;
 	fn public(secret: &[u8]) -> Result<[u8; 33], ()>;
 	fn scalar_add(v: &[u8], w: &[u8]) -> Result<[u8; 32], ()>;
 }
 
 #[cfg(feature = "full_crypto")]
-#[derive(Clone, PartialEq, Eq, Debug, Zeroize, ZeroizeOnDrop)]
-pub struct ExtendedPrivateKey<C: Curve> {
+#[derive(PartialEq, Eq, Debug, Zeroize, ZeroizeOnDrop)]
+pub struct ExtendedPrivateKey<C> {
 	secret: [u8; 32],
 	chain_code: [u8; 32],
 	marker: sp_std::marker::PhantomData<C>,
+}
+
+#[cfg(feature = "full_crypto")]
+impl<C> Clone for ExtendedPrivateKey<C> {
+	fn clone(&self) -> Self {
+		Self { secret: self.secret, chain_code: self.chain_code, marker: Default::default() }
+	}
 }
 
 #[cfg(feature = "full_crypto")]
@@ -244,7 +251,6 @@ pub mod secp256k1 {
 
 	pub type ExtendedPrivateKey = super::ExtendedPrivateKey<Curve>;
 
-	#[derive(Clone)]
 	pub struct Curve;
 
 	impl super::Curve for Curve {
@@ -281,7 +287,6 @@ pub mod secp256r1 {
 
 	pub type ExtendedPrivateKey = super::ExtendedPrivateKey<Curve>;
 
-	#[derive(Clone)]
 	pub struct Curve;
 
 	impl super::Curve for Curve {
