@@ -242,12 +242,13 @@ impl<C: Curve> AsRef<[u8]> for ExtendedPrivateKey<C> {
 
 #[cfg(feature = "full_crypto")]
 pub mod secp256k1 {
-	use secp256k1::{Scalar, SecretKey};
-
-	#[cfg(all(feature = "full_crypto", not(feature = "std")))]
-	use secp256k1::Secp256k1;
+	#[cfg(not(feature = "std"))]
+	use k256::{
+		elliptic_curve::{ops::Add, sec1::ToEncodedPoint, ScalarPrimitive},
+		Secp256k1, SecretKey,
+	};
 	#[cfg(feature = "std")]
-	use secp256k1::SECP256K1;
+	use secp256k1::{Scalar, SecretKey, SECP256K1};
 
 	pub type ExtendedPrivateKey = super::ExtendedPrivateKey<Curve>;
 
@@ -255,25 +256,50 @@ pub mod secp256k1 {
 
 	impl super::Curve for Curve {
 		fn secret(secret: &[u8]) -> Result<[u8; 32], ()> {
+			#[cfg(not(feature = "std"))]
+			{
+				SecretKey::from_slice(secret).map_err(|_| ())?;
+				<[u8; 32]>::try_from(secret).map_err(|_| ())
+			}
+
+			#[cfg(feature = "std")]
 			Ok(SecretKey::from_slice(secret).map_err(|_| ())?.secret_bytes())
 		}
 
 		fn public(secret: &[u8]) -> Result<[u8; 33], ()> {
-			let s = SecretKey::from_slice(secret).map_err(|_| ())?;
+			#[cfg(not(feature = "std"))]
+			{
+				let s = SecretKey::from_slice(secret).map_err(|_| ())?;
+				let p = s.public_key().to_encoded_point(true);
+				let mut x = [0u8; 33];
+				x.copy_from_slice(p.as_bytes());
+				Ok(x)
+			}
 
 			#[cfg(feature = "std")]
-			let context = SECP256K1;
-			#[cfg(not(feature = "std"))]
-			let context = Secp256k1::signing_only();
-
-			Ok(s.public_key(context).serialize())
+			{
+				let s = SecretKey::from_slice(secret).map_err(|_| ())?;
+				Ok(s.public_key(SECP256K1).serialize())
+			}
 		}
 
 		fn scalar_add(v: &[u8], w: &[u8]) -> Result<[u8; 32], ()> {
-			let v = SecretKey::from_slice(v).map_err(|_| ())?;
-			let w = <[u8; 32]>::try_from(w).map_err(|_| ())?;
-			let w = Scalar::from_be_bytes(w).map_err(|_| ())?;
-			Ok(v.add_tweak(&w).map_err(|_| ())?.secret_bytes())
+			#[cfg(not(feature = "std"))]
+			{
+				let v = ScalarPrimitive::<Secp256k1>::from_slice(v).unwrap();
+				let w = ScalarPrimitive::<Secp256k1>::from_slice(w).unwrap();
+				let mut x = [0u8; 32];
+				x.copy_from_slice(&v.add(&w).to_bytes()[..]);
+				Ok(x)
+			}
+
+			#[cfg(feature = "std")]
+			{
+				let v = SecretKey::from_slice(v).map_err(|_| ())?;
+				let w = <[u8; 32]>::try_from(w).map_err(|_| ())?;
+				let w = Scalar::from_be_bytes(w).map_err(|_| ())?;
+				Ok(v.add_tweak(&w).map_err(|_| ())?.secret_bytes())
+			}
 		}
 	}
 }
