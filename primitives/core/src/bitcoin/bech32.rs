@@ -17,9 +17,12 @@
 
 //! Wrapper for Bech32 encoding and decoding.
 
+#[cfg(feature = "serde")]
 pub use bech32::Hrp;
 
+#[cfg(feature = "serde")]
 use bech32::Bech32;
+#[cfg(feature = "serde")]
 use sp_runtime::RuntimeString;
 #[cfg(feature = "serde")]
 use sp_std::vec::Vec;
