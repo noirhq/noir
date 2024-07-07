@@ -53,7 +53,9 @@ impl AccountId32 {
 	}
 }
 
-impl Property<Option<Multikey>> for AccountId32 {
+impl Property for AccountId32 {
+	type Value = Option<Multikey>;
+
 	fn get(&self) -> &Option<Multikey> {
 		&self.key
 	}

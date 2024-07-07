@@ -21,6 +21,7 @@ pub use sp_runtime::traits::{IdentifyAccount, Lazy};
 pub trait VerifyMut {
 	/// Type of the signer.
 	type Signer: IdentifyAccount;
+
 	/// Verify a signature.
 	///
 	/// Return `true` if signature is valid for the value.
@@ -41,10 +42,13 @@ pub trait Checkable<T> {
 }
 
 /// Property accessor.
-pub trait Property<T> {
+pub trait Property<T = ()> {
+	/// Property value type.
+	type Value;
+
 	/// Get the reference to the property.
-	fn get(&self) -> &T;
+	fn get(&self) -> &Self::Value;
 
 	/// Set the property.
-	fn set(&mut self, value: T);
+	fn set(&mut self, value: Self::Value);
 }
