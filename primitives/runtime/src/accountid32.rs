@@ -199,7 +199,7 @@ impl From<sr25519::Public> for AccountId32 {
 
 impl From<ecdsa::Public> for AccountId32 {
 	fn from(v: ecdsa::Public) -> Self {
-		Self { inner: blake2_256(v.as_ref()), key: Some(v.into()) }
+		Self::from(&v)
 	}
 }
 
@@ -211,7 +211,7 @@ impl From<&ecdsa::Public> for AccountId32 {
 
 impl From<p256::Public> for AccountId32 {
 	fn from(v: p256::Public) -> Self {
-		Self { inner: blake2_256(v.as_ref()), key: Some(v.into()) }
+		Self::from(&v)
 	}
 }
 
