@@ -49,8 +49,8 @@ pub trait Crypto {
 	}
 
 	/// Decompress secp256k1 public key.
-	fn secp256k1_pubkey_serialize(pubkey: &[u8; 33]) -> Option<[u8; 64]> {
-		ecdsa::secp256k1_pubkey_serialize(pubkey)
+	fn secp256k1_pubkey_serialize(pubkey: &[u8], compressed: bool) -> Option<Vec<u8>> {
+		ecdsa::secp256k1_pubkey_serialize(pubkey, compressed)
 	}
 
 	/// Verify a non-recoverable secp256k1 ECDSA signature (64 bytes).
