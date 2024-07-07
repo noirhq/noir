@@ -17,25 +17,27 @@
 
 //! Simple ECDSA secp256k1 API.
 
+use sp_std::vec::Vec;
+
 /// Decompress secp256k1 public key.
-pub fn secp256k1_pubkey_serialize(pubkey: &[u8], compressed: bool) -> Option<Vec<u8>> {
+pub fn secp256k1_pubkey_serialize(pubkey: &[u8], compressed: bool) -> Result<Vec<u8>, ()> {
 	#[cfg(not(feature = "std"))]
 	{
 		use k256::{elliptic_curve::sec1::ToEncodedPoint, PublicKey};
 
-		let pubkey = PublicKey::from_sec1_bytes(&pubkey[..]).ok()?;
-		Some(pubkey.to_encoded_point(compressed).as_bytes().to_vec())
+		let pubkey = PublicKey::from_sec1_bytes(&pubkey[..]).map_err(|_| ())?;
+		Ok(pubkey.to_encoded_point(compressed).as_bytes().to_vec())
 	}
 
 	#[cfg(feature = "std")]
 	{
 		use secp256k1::PublicKey;
 
-		let pubkey = PublicKey::from_slice(&pubkey[..]).ok()?;
+		let pubkey = PublicKey::from_slice(&pubkey[..]).map_err(|_| ())?;
 		if compressed {
-			Some(pubkey.serialize().to_vec())
+			Ok(pubkey.serialize().to_vec())
 		} else {
-			Some(pubkey.serialize_uncompressed().to_vec())
+			Ok(pubkey.serialize_uncompressed().to_vec())
 		}
 	}
 }

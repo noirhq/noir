@@ -88,15 +88,15 @@ impl Verify for AuthorizationProof {
 			(Self::P256(ref sig), who) => {
 				let m = sp_io::hashing::blake2_256(msg.get());
 				match np_io::crypto::p256_recover_compressed(sig.as_ref(), &m) {
-					Some(pubkey) =>
+					Ok(pubkey) =>
 						&sp_io::hashing::blake2_256(pubkey.as_ref()) ==
 							<dyn AsRef<[u8; 32]>>::as_ref(who),
 					_ => false,
 				}
 			},
 			(Self::WebAuthn(ref sig), who) => {
-				match np_io::crypto::webauthn_recover(sig, msg.get()) {
-					Some(pubkey) =>
+				match np_io::crypto::webauthn_es256_recover(sig, msg.get()) {
+					Ok(pubkey) =>
 						&sp_io::hashing::blake2_256(pubkey.as_ref()) ==
 							<dyn AsRef<[u8; 32]>>::as_ref(&who),
 					_ => false,
@@ -129,13 +129,13 @@ impl VerifyMut for AuthorizationProof {
 			(Self::P256(ref sig), who) => {
 				let m = sp_io::hashing::blake2_256(msg.get());
 				match np_io::crypto::p256_recover_compressed(sig.as_ref(), &m) {
-					Some(pubkey) => who.check(p256::Public::from_raw(pubkey)),
+					Ok(pubkey) => who.check(p256::Public::from_raw(pubkey)),
 					_ => false,
 				}
 			},
 			(Self::WebAuthn(ref sig), who) => {
-				match np_io::crypto::webauthn_recover(sig, msg.get()) {
-					Some(pubkey) => who.check(webauthn::Public::from_raw(pubkey)),
+				match np_io::crypto::webauthn_es256_recover(sig, msg.get()) {
+					Ok(pubkey) => who.check(webauthn::Public::from_raw(pubkey)),
 					_ => false,
 				}
 			},
