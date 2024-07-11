@@ -18,10 +18,10 @@
 //! Interoperable public key representation.
 
 use crate::{traits::Property, AccountId32};
-use np_core::p256;
+use np_core::{multiformats::multicodec::unrolled as multicodec, p256};
 use parity_scale_codec::{Decode, Encode, EncodeLike, Error as CodecError, Input, MaxEncodedLen};
 use scale_info::TypeInfo;
-use sp_core::{ecdsa, ed25519, sr25519, H256};
+use sp_core::{ecdsa, ed25519, sr25519};
 use sp_runtime::traits::IdentifyAccount;
 #[cfg(not(feature = "std"))]
 use sp_std::prelude::*;
@@ -36,21 +36,6 @@ use serde::{
 };
 #[cfg(all(not(feature = "std"), feature = "serde"))]
 use sp_std::alloc::string::String;
-
-/// Multicodec codes encoded with unsigned varint.
-#[allow(dead_code)]
-pub mod multicodec {
-	/// Multicodec code for Secp256k1 public key. (0xe7)
-	pub const SECP256K1_PUB: &[u8] = &[0xe7, 0x01];
-	/// Multicodec code for Ed25519 public key. (0xed)
-	pub const ED25519_PUB: &[u8] = &[0xed, 0x01];
-	/// Multicodec code for Sr25519 public key. (0xef)
-	pub const SR25519_PUB: &[u8] = &[0xef, 0x01];
-	/// Multicodec code for P-256 public key. (0x1200)
-	pub const P256_PUB: &[u8] = &[0x80, 0x24];
-	/// Multicodec code for Blake2b-256 hash. (0xb220 + length(32))
-	pub const BLAKE2B_256: &[u8] = &[0xa0, 0xe4, 0x02, 0x20];
-}
 
 #[cfg_attr(feature = "std", derive(thiserror::Error))]
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -77,8 +62,6 @@ pub enum Multikey {
 	Secp256k1(ecdsa::Public),
 	/// P-256 public key.
 	P256(p256::Public),
-	/// Blake2b-256 hash.
-	Blake2b256(H256),
 }
 
 impl IdentifyAccount for Multikey {
@@ -90,7 +73,6 @@ impl IdentifyAccount for Multikey {
 			Multikey::Sr25519(k) => AccountId32::from(k),
 			Multikey::Secp256k1(k) => AccountId32::from(k),
 			Multikey::P256(k) => AccountId32::from(k),
-			Multikey::Blake2b256(k) => AccountId32::from(k),
 		}
 	}
 }
@@ -152,18 +134,15 @@ impl TryFrom<Vec<u8>> for Multikey {
 			return Err(Error::BadLength);
 		}
 
-		match &v[0..4] {
-			[0xe7, 0x01, ..] =>
+		match &v[0..2] {
+			[0xe7, 0x01] =>
 				ecdsa::Public::try_from(&v[2..]).map_err(|_| Error::BadLength).map(Into::into),
-			[0xed, 0x01, ..] =>
+			[0xed, 0x01] =>
 				ed25519::Public::try_from(&v[2..]).map_err(|_| Error::BadLength).map(Into::into),
-			[0xef, 0x01, ..] =>
+			[0xef, 0x01] =>
 				sr25519::Public::try_from(&v[2..]).map_err(|_| Error::BadLength).map(Into::into),
-			[0x80, 0x24, ..] =>
+			[0x80, 0x24] =>
 				p256::Public::try_from(&v[2..]).map_err(|_| Error::BadLength).map(Into::into),
-			[0xa0, 0xe4, 0x02, 0x20] => (v.len() == 36)
-				.then(|| Self::Blake2b256(H256::from_slice(&v[4..])))
-				.ok_or(Error::BadLength),
 			_ => Err(Error::InvalidPrefix),
 		}
 	}
@@ -182,7 +161,6 @@ impl Encode for Multikey {
 			Multikey::Sr25519(_) => 34,
 			Multikey::Secp256k1(_) => 35,
 			Multikey::P256(_) => 35,
-			Multikey::Blake2b256(_) => 36,
 		}
 	}
 
@@ -190,23 +168,19 @@ impl Encode for Multikey {
 		let mut res = Vec::with_capacity(self.size_hint());
 		match self {
 			Self::Ed25519(k) => {
-				res.extend_from_slice(multicodec::ED25519_PUB);
+				res.extend_from_slice(&multicodec::ED25519_PUB);
 				res.extend_from_slice(k.as_ref());
 			},
 			Self::Sr25519(k) => {
-				res.extend_from_slice(multicodec::SR25519_PUB);
+				res.extend_from_slice(&multicodec::SR25519_PUB);
 				res.extend_from_slice(k.as_ref());
 			},
 			Self::Secp256k1(k) => {
-				res.extend_from_slice(multicodec::SECP256K1_PUB);
+				res.extend_from_slice(&multicodec::SECP256K1_PUB);
 				res.extend_from_slice(k.as_ref());
 			},
 			Self::P256(k) => {
-				res.extend_from_slice(multicodec::P256_PUB);
-				res.extend_from_slice(k.as_ref());
-			},
-			Self::Blake2b256(k) => {
-				res.extend_from_slice(multicodec::BLAKE2B_256);
+				res.extend_from_slice(&multicodec::P256_PUB);
 				res.extend_from_slice(k.as_ref());
 			},
 		}
@@ -254,12 +228,6 @@ impl From<ecdsa::Public> for Multikey {
 impl From<p256::Public> for Multikey {
 	fn from(k: p256::Public) -> Self {
 		Self::P256(k)
-	}
-}
-
-impl From<H256> for Multikey {
-	fn from(hash: H256) -> Self {
-		Self::Blake2b256(hash)
 	}
 }
 

@@ -29,6 +29,7 @@ pub mod webauthn;
 pub mod bitcoin;
 pub mod cosmos;
 pub mod ethereum;
+pub mod multiformats;
 
 pub use cosmos::CosmosAddress;
 pub use ethereum::EthereumAddress;
