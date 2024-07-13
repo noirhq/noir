@@ -109,15 +109,19 @@ impl Encode for UnsignedVarint {
 impl Decode for UnsignedVarint {
 	fn decode<I: Input>(input: &mut I) -> Result<Self, CodecError> {
 		let mut value = 0;
-		let mut shift = 0;
+		let mut i = 0;
 		loop {
 			let byte = input.read_byte()?;
-			value |= ((byte & 0x7f) as u64) << shift;
+			value |= ((byte & 0x7f) as u64) << (7 * i);
+			i += 1;
 			if byte & 0x80 == 0 {
 				break;
 			}
-			shift += 7;
 		}
-		Ok(Self(value))
+		let value = UnsignedVarint(value);
+		if i > 10 || i != value.encoded_size() {
+			return Err(CodecError::from("unsigned varint: non-canonical encoding"));
+		}
+		Ok(value)
 	}
 }
