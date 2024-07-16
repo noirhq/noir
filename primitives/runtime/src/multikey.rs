@@ -131,7 +131,7 @@ impl TryFrom<Vec<u8>> for Multikey {
 
 	fn try_from(v: Vec<u8>) -> Result<Self, Self::Error> {
 		if v.len() < 34 {
-			return Err(Error::BadLength);
+			return Err(Error::BadLength)
 		}
 
 		match &v[0..2] {

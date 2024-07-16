@@ -347,7 +347,7 @@ impl TryFrom<&AccountId32> for EthereumAddress {
 	fn try_from(v: &AccountId32) -> Result<Self, Self::Error> {
 		if let Some(v) = v.get() {
 			if let Ok(pubkey) = ecdsa::Public::try_from(v.clone()) {
-				return Ok(EthereumAddress::from(&pubkey));
+				return Ok(EthereumAddress::from(&pubkey))
 			}
 		}
 		Err(())
@@ -360,7 +360,7 @@ impl TryFrom<&AccountId32> for CosmosAddress {
 	fn try_from(v: &AccountId32) -> Result<Self, Self::Error> {
 		if let Some(v) = v.get() {
 			if let Ok(pubkey) = ecdsa::Public::try_from(v.clone()) {
-				return Ok(CosmosAddress::from(&pubkey));
+				return Ok(CosmosAddress::from(&pubkey))
 			}
 		}
 		Err(())

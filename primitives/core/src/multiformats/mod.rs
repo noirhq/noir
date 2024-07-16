@@ -15,10 +15,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[cfg(feature = "serde")]
+extern crate alloc;
+use alloc::vec::Vec;
 use parity_scale_codec::{Decode, Encode, Error as CodecError, Input};
-#[cfg(feature = "serde")]
-use sp_std::vec::Vec;
 
 pub mod multicodec {
 	pub const SECP256K1_PUB: u64 = 0xe7;
@@ -74,14 +73,13 @@ impl UnsignedVarint {
 			bytes[i] = byte;
 			i += 1;
 			if value == 0 {
-				break;
+				break
 			}
 		}
 		bytes
 	}
 }
 
-#[cfg(feature = "serde")]
 impl Encode for UnsignedVarint {
 	fn size_hint(&self) -> usize {
 		self.encoded_size()
@@ -98,14 +96,13 @@ impl Encode for UnsignedVarint {
 			}
 			bytes.push(byte);
 			if value == 0 {
-				break;
+				break
 			}
 		}
 		bytes
 	}
 }
 
-#[cfg(feature = "serde")]
 impl Decode for UnsignedVarint {
 	fn decode<I: Input>(input: &mut I) -> Result<Self, CodecError> {
 		let mut value = 0;
@@ -115,12 +112,12 @@ impl Decode for UnsignedVarint {
 			value |= ((byte & 0x7f) as u64) << (7 * i);
 			i += 1;
 			if byte & 0x80 == 0 {
-				break;
+				break
 			}
 		}
 		let value = UnsignedVarint(value);
 		if i > 10 || i != value.encoded_size() {
-			return Err(CodecError::from("unsigned varint: non-canonical encoding"));
+			return Err(CodecError::from("unsigned varint: non-canonical encoding"))
 		}
 		Ok(value)
 	}

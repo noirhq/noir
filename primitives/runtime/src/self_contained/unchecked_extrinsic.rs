@@ -96,7 +96,7 @@ where
 	fn check(self, lookup: &Lookup) -> Result<Self::Checked, TransactionValidityError> {
 		if self.0.function.is_self_contained() {
 			if self.0.signature.is_some() {
-				return Err(TransactionValidityError::Invalid(InvalidTransaction::BadProof));
+				return Err(TransactionValidityError::Invalid(InvalidTransaction::BadProof))
 			}
 
 			let signed_info = self

@@ -116,7 +116,7 @@ impl Signature {
 		let rid = RecoveryId::from_byte(self.0[64])?;
 		let sig = EcdsaSignature::from_bytes(self.0[..64].into()).ok()?;
 		if sig.s().is_high().into() {
-			return None;
+			return None
 		}
 
 		VerifyingKey::recover_from_prehash(&message[..], &sig, rid)
