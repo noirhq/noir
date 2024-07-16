@@ -25,13 +25,15 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 mod config;
 mod deps;
-mod prelude;
+pub mod prelude;
 mod version;
 
 pub use frame::support::weights::Weight;
 pub use prelude::*;
 pub use version::*;
 
+extern crate alloc;
+use alloc::{boxed::Box, vec, vec::Vec};
 use deps::*;
 use frame::support::genesis_builder_helper::{build_state, get_preset};
 use pallet::grandpa::AuthorityId as GrandpaId;
@@ -44,7 +46,6 @@ use primitives::{
 		transaction_validity::{TransactionSource, TransactionValidity},
 		ApplyExtrinsicResult,
 	},
-	std::prelude::*,
 	version::RuntimeVersion,
 };
 
@@ -121,7 +122,7 @@ impl_runtime_apis! {
 			Runtime::metadata_at_version(version)
 		}
 
-		fn metadata_versions() -> sp_std::vec::Vec<u32> {
+		fn metadata_versions() -> Vec<u32> {
 			Runtime::metadata_versions()
 		}
 	}

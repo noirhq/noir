@@ -38,7 +38,6 @@ pub mod primitives {
 	}
 	pub use sp_core as core;
 	pub use sp_runtime as runtime;
-	pub use sp_std as std;
 	pub use sp_version as version;
 }
 
