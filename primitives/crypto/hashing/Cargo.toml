@@ -9,7 +9,7 @@ publish = false
 
 [dependencies]
 ripemd = { version = "0.1.3", default-features = false }
-sp-crypto-hashing = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.11.0", default-features = false }
+sp-crypto-hashing = { version = "0.1.0", default-features = false }
 
 [features]
 default = ["std"]

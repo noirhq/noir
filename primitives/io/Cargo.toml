@@ -8,9 +8,9 @@ repository = { workspace = true }
 publish = false
 
 [dependencies]
-sp-io = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.11.0", default-features = false }
-sp-runtime-interface = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.11.0", default-features = false }
-sp-std = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.11.0", default-features = false }
+sp-io = { version = "35.0.0", default-features = false }
+sp-runtime-interface = { version = "27.0.0", default-features = false }
+sp-std = { version = "14.0.0", default-features = false }
 
 # workspace crates
 np-core = { workspace = true }

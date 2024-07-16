@@ -15,7 +15,7 @@ targets = ["x86_64-unknown-linux-gnu"]
 noir-runtime = { path = "../runtime" }
 
 [build-dependencies]
-substrate-build-script-utils = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.11.0" }
+substrate-build-script-utils = { version = "11.0.0" }
 
 [features]
 runtime-benchmarks = []

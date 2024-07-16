@@ -27,7 +27,7 @@ np-runtime = { path = "primitives/runtime", default-features = false }
 pallet-alias = { path = "frame/alias", default-features = false }
 
 # frontier
-fp-self-contained = { git = "https://github.com/polkadot-evm/frontier", branch = "polkadot-v1.11.0", default-features = false }
+fp-self-contained = { git = "https://github.com/noirhq/frontier", branch = "polkadot-v1.11.0", default-features = false }
 
 [profile.release]
 panic = "unwind"

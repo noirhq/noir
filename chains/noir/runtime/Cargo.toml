@@ -15,41 +15,41 @@ parity-scale-codec = { version = "3.6.12", default-features = false, features = 
 scale-info = { version = "2.11.3", default-features = false, features = ["derive"] }
 smallvec = { version = "1.13.2" }
 
-frame-executive = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.11.0", default-features = false }
-frame-support = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.11.0", default-features = false, features = ["experimental"] }
-frame-system = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.11.0", default-features = false }
-frame-system-rpc-runtime-api = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.11.0", default-features = false }
-pallet-aura = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.11.0", default-features = false }
-pallet-balances = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.11.0", default-features = false }
-pallet-grandpa = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.11.0", default-features = false }
-pallet-sudo = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.11.0", default-features = false }
-pallet-timestamp = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.11.0", default-features = false }
-pallet-transaction-payment = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.11.0", default-features = false }
-pallet-transaction-payment-rpc-runtime-api = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.11.0", default-features = false }
+frame-executive = { version = "33.0.0", default-features = false }
+frame-support = { version = "33.0.0", default-features = false, features = ["experimental"] }
+frame-system = { version = "33.0.0", default-features = false }
+frame-system-rpc-runtime-api = { version = "31.0.0", default-features = false }
+pallet-aura = { version = "32.0.0", default-features = false }
+pallet-balances = { version = "34.0.0", default-features = false }
+pallet-grandpa = { version = "33.0.0", default-features = false }
+pallet-sudo = { version = "33.0.0", default-features = false }
+pallet-timestamp = { version = "32.0.0", default-features = false }
+pallet-transaction-payment = { version = "33.0.0", default-features = false }
+pallet-transaction-payment-rpc-runtime-api = { version = "33.0.0", default-features = false }
 
-frame-benchmarking = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.11.0", default-features = false, optional = true }
-frame-try-runtime = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.11.0", default-features = false, optional = true }
+frame-benchmarking = { version = "33.0.0", default-features = false, optional = true }
+frame-try-runtime = { version = "0.39.0", default-features = false, optional = true }
 
-sp-api = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.11.0", default-features = false }
-sp-block-builder = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.11.0", default-features = false }
-sp-consensus-aura = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.11.0", default-features = false }
-sp-consensus-grandpa = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.11.0", default-features = false }
-sp-core = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.11.0", default-features = false }
-sp-genesis-builder = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.11.0", default-features = false }
-sp-inherents = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.11.0", default-features = false }
-sp-offchain = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.11.0", default-features = false }
-sp-runtime = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.11.0", default-features = false }
-sp-session = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.11.0", default-features = false }
-sp-std = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.11.0", default-features = false }
-sp-transaction-pool = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.11.0", default-features = false }
-sp-version = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.11.0", default-features = false }
+sp-api = { version = "31.0.0", default-features = false }
+sp-block-builder = { version = "31.0.0", default-features = false }
+sp-consensus-aura = { version = "0.37.0", default-features = false }
+sp-consensus-grandpa = { version = "18.0.0", default-features = false }
+sp-core = { version = "32.0.0", default-features = false }
+sp-genesis-builder = { version = "0.12.0", default-features = false }
+sp-inherents = { version = "31.0.0", default-features = false }
+sp-offchain = { version = "31.0.0", default-features = false }
+sp-runtime = { version = "36.0.0", default-features = false }
+sp-session = { version = "32.0.0", default-features = false }
+sp-std = { version = "14.0.0", default-features = false }
+sp-transaction-pool = { version = "31.0.0", default-features = false }
+sp-version = { version = "34.0.0", default-features = false }
 
 noir-core-primitives = { path = "../core-primitives", default-features = false }
 np-core = { workspace = true, default-features = false, features = ["serde"] }
 np-runtime = { workspace = true, default-features = false, features = ["serde"] }
 
 [build-dependencies]
-substrate-wasm-builder = { git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.11.0" }
+substrate-wasm-builder = { version = "22.0.1" }
 
 [features]
 default = ["std"]
