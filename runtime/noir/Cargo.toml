@@ -44,7 +44,8 @@ sp-std = { version = "14.0.0", default-features = false }
 sp-transaction-pool = { version = "31.0.0", default-features = false }
 sp-version = { version = "34.0.0", default-features = false }
 
-noir-core-primitives = { path = "../core-primitives", default-features = false }
+noir-core-primitives = { workspace = true }
+noir-runtime-common = { path = "../common", default-features = false }
 np-core = { workspace = true, default-features = false, features = ["serde"] }
 np-runtime = { workspace = true, default-features = false, features = ["serde"] }
 
@@ -82,6 +83,7 @@ std = [
 	"sp-transaction-pool/std",
 	"sp-version/std",
 	"noir-core-primitives/std",
+	"noir-runtime-common/std",
 	"np-core/std",
 	"np-runtime/std",
 ]

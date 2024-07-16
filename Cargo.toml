@@ -2,14 +2,15 @@
 resolver = "2"
 
 members = [
-	"chains/noir/core-primitives",
-	"chains/noir/node",
-	"chains/noir/runtime",
+	"core-primitives",
 	"frame/alias",
+	"node/noir",
 	"primitives/core",
 	"primitives/crypto/hashing",
 	"primitives/io",
 	"primitives/runtime",
+	"runtime/common",
+	"runtime/noir",
 ]
 
 [workspace.package]
@@ -20,6 +21,7 @@ version = "0.4.0-dev"
 
 [workspace.dependencies]
 # noir
+noir-core-primitives = { path = "core-primitives", default-features = false }
 np-core = { path = "primitives/core", default-features = false }
 np-crypto-hashing = { path = "primitives/crypto/hashing", default-features = false }
 np-io = { path = "primitives/io", default-features = false }

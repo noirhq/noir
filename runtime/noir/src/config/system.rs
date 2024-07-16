@@ -29,7 +29,7 @@ use frame::{
 	},
 	system::{config_preludes::SolochainDefaultConfig, limits},
 };
-use noir_core_primitives::{constants::SS58_PREFIX, units::MiB, AccountIndex, Hash};
+use noir_runtime_common::{constants::SS58_PREFIX, units::MiB};
 use primitives::runtime::{traits::AccountIdLookup, Perbill};
 
 pub const AVERAGE_ON_INITIALIZE_RATIO: Perbill = Perbill::from_percent(1);

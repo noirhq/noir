@@ -18,7 +18,7 @@
 
 use crate::*;
 
-use noir_core_primitives::{AccountIndex, BlakeTwo256, BlockNumber, Signature};
+pub use noir_core_primitives::*;
 use primitives::runtime::{generic, impl_opaque_keys, MultiAddress};
 
 pub type Address = MultiAddress<AccountId, AccountIndex>;

@@ -22,7 +22,7 @@ use frame::support::weights::{
 	constants::ExtrinsicBaseWeight, ConstantMultiplier, WeightToFeeCoefficient,
 	WeightToFeeCoefficients, WeightToFeePolynomial,
 };
-use noir_core_primitives::units::CENTS;
+use noir_runtime_common::units::CENTS;
 use pallet::transaction_payment::{FungibleAdapter, Multiplier, TargetedFeeAdjustment};
 use primitives::runtime::{traits::Bounded, FixedPointNumber, Perbill, Perquintill};
 use smallvec::smallvec;

@@ -34,7 +34,6 @@ pub use version::*;
 
 use deps::*;
 use frame::support::genesis_builder_helper::{build_state, get_preset};
-use noir_core_primitives::{AccountId, AccountNonce, Balance, Moment};
 use pallet::grandpa::AuthorityId as GrandpaId;
 use primitives::{
 	api::impl_runtime_apis,

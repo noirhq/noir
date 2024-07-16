@@ -20,6 +20,9 @@
 #![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
 
+/// Re-export `sp-runtime`.
+pub use sp_runtime as s_;
+
 mod accountid32;
 /// Generic extrinsic implementation.
 pub mod generic;
@@ -34,7 +37,6 @@ pub use multikey::Multikey;
 
 #[cfg(feature = "serde")]
 pub use serde::{Deserialize, Serialize};
-pub use sp_runtime;
 
 use crate::traits::{Checkable, VerifyMut};
 use np_core::{p256, webauthn};

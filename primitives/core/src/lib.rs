@@ -19,6 +19,9 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+/// Re-export `sp-core`.
+pub use sp_core as s_;
+
 mod crypto_bytes;
 
 pub mod crypto;

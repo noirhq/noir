@@ -15,40 +15,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![allow(missing_docs)]
+//! Noir common types for runtime.
+
 #![cfg_attr(not(feature = "std"), no_std)]
-
-use np_runtime::{
-	traits::{IdentifyAccount, VerifyMut},
-	AuthorizationProof,
-};
-
-pub use np_runtime::sp_runtime::traits::BlakeTwo256;
-pub use sp_core::{Bytes, H256, U256};
-
-pub type AccountId = <AccountPublic as IdentifyAccount>::AccountId;
-pub type AccountIndex = ();
-pub type AccountNonce = u32;
-pub type AccountPublic = <Signature as VerifyMut>::Signer;
-pub type Balance = u128;
-pub type BlockNumber = u32;
-pub type Hash = H256;
-pub type Moment = u64;
-pub type Signature = AuthorizationProof;
-
-pub mod opaque {
-	use super::*;
-	use np_runtime::sp_runtime::{generic, OpaqueExtrinsic};
-
-	pub type Block = generic::Block<Header, UncheckedExtrinsic>;
-	pub type BlockId = generic::BlockId<Block>;
-	pub type Header = generic::Header<BlockNumber, BlakeTwo256>;
-	pub type UncheckedExtrinsic = OpaqueExtrinsic;
-}
 
 #[allow(non_upper_case_globals)]
 pub mod units {
-	use super::*;
+	use noir_core_primitives::{Balance, Moment};
 
 	/// A unit of base currency.
 	pub const DOLLARS: Balance = 1_000_000_000_000_000_000;
@@ -67,5 +40,6 @@ pub mod units {
 }
 
 pub mod constants {
+	/// The SS58 prefix for account IDs.
 	pub const SS58_PREFIX: u16 = 42;
 }

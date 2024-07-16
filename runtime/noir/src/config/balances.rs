@@ -18,15 +18,27 @@
 
 use crate::*;
 
-use noir_core_primitives::units::SECONDS;
-use primitives::runtime::traits::{ConstBool, ConstU32};
+use noir_runtime_common::units::CENTS;
+use primitives::runtime::traits::ConstU32;
 
-pub const SLOT_DURATION: Moment = 6 * SECONDS;
+pub const EXISTENTIAL_DEPOSIT: Balance = 1 * CENTS;
 
-impl pallet::aura::Config for Runtime {
-	type AllowMultipleBlocksPerSlot = ConstBool<false>;
-	type AuthorityId = AuraId;
-	type DisabledValidators = ();
-	type MaxAuthorities = ConstU32<32>;
-	type SlotDuration = pallet::aura::MinimumPeriodTimesTwo<Self>;
+parameter_types! {
+	pub const ExistentialDeposit: Balance = EXISTENTIAL_DEPOSIT;
+}
+
+impl pallet::balances::Config for Runtime {
+	type AccountStore = System;
+	type Balance = Balance;
+	type DustRemoval = ();
+	type ExistentialDeposit = ExistentialDeposit;
+	type FreezeIdentifier = RuntimeFreezeReason;
+	type MaxFreezes = ConstU32<8>;
+	type MaxLocks = ConstU32<50>;
+	type MaxReserves = ConstU32<50>;
+	type ReserveIdentifier = [u8; 8];
+	type RuntimeEvent = RuntimeEvent;
+	type RuntimeFreezeReason = RuntimeFreezeReason;
+	type RuntimeHoldReason = RuntimeHoldReason;
+	type WeightInfo = pallet::balances::weights::SubstrateWeight<Self>;
 }
