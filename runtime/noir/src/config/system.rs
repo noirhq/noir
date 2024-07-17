@@ -18,19 +18,17 @@
 
 use crate::*;
 
-use frame::{
-	support::{
-		derive_impl,
-		dispatch::DispatchClass,
-		traits::ConstU32,
-		weights::constants::{
-			BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_REF_TIME_PER_SECOND,
-		},
+use frame_support::{
+	derive_impl,
+	dispatch::DispatchClass,
+	traits::ConstU32,
+	weights::constants::{
+		BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_REF_TIME_PER_SECOND,
 	},
-	system::{config_preludes::SolochainDefaultConfig, limits},
 };
+use frame_system::{config_preludes::SolochainDefaultConfig, limits};
 use noir_runtime_common::{constants::SS58_PREFIX, units::MiB};
-use primitives::runtime::{traits::AccountIdLookup, Perbill};
+use sp_runtime::{traits::AccountIdLookup, Perbill};
 
 pub const AVERAGE_ON_INITIALIZE_RATIO: Perbill = Perbill::from_percent(1);
 pub const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
@@ -61,9 +59,9 @@ parameter_types! {
 	pub const Version: RuntimeVersion = VERSION;
 }
 
-#[derive_impl(SolochainDefaultConfig as frame::system::DefaultConfig)]
-impl frame::system::Config for Runtime {
-	type AccountData = pallet::balances::AccountData<Balance>;
+#[derive_impl(SolochainDefaultConfig as frame_system::DefaultConfig)]
+impl frame_system::Config for Runtime {
+	type AccountData = pallet_balances::AccountData<Balance>;
 	type AccountId = AccountId;
 	type Block = Block;
 	type BlockHashCount = BlockHashCount;

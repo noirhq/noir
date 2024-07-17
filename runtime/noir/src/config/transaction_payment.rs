@@ -18,14 +18,14 @@
 
 use crate::*;
 
-use frame::support::weights::{
+use frame_support::weights::{
 	constants::ExtrinsicBaseWeight, ConstantMultiplier, WeightToFeeCoefficient,
 	WeightToFeeCoefficients, WeightToFeePolynomial,
 };
 use noir_runtime_common::units::CENTS;
-use pallet::transaction_payment::{FungibleAdapter, Multiplier, TargetedFeeAdjustment};
-use primitives::runtime::{traits::Bounded, FixedPointNumber, Perbill, Perquintill};
+use pallet_transaction_payment::{FungibleAdapter, Multiplier, TargetedFeeAdjustment};
 use smallvec::smallvec;
+use sp_runtime::{traits::Bounded, FixedPointNumber, Perbill, Perquintill};
 
 parameter_types! {
 	pub const OperationalFeeMultiplier: u8 = 5;
@@ -61,7 +61,7 @@ impl WeightToFeePolynomial for WeightToFee {
 	}
 }
 
-impl pallet::transaction_payment::Config for Runtime {
+impl pallet_transaction_payment::Config for Runtime {
 	type FeeMultiplierUpdate = SlowAdjustingFeeUpdate<Self>;
 	type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
 	type OnChargeTransaction = FungibleAdapter<Balances, () /* TODO: DealWithFees */>;

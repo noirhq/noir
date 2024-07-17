@@ -24,32 +24,31 @@
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 mod config;
-mod deps;
 pub mod prelude;
 mod version;
 
-pub use frame::support::weights::Weight;
+pub use frame_support::weights::Weight;
 pub use prelude::*;
 pub use version::*;
 
 extern crate alloc;
 use alloc::{boxed::Box, vec, vec::Vec};
-use deps::*;
-use frame::support::genesis_builder_helper::{build_state, get_preset};
-use pallet::grandpa::AuthorityId as GrandpaId;
-use primitives::{
-	api::impl_runtime_apis,
-	consensus::aura::sr25519::AuthorityId as AuraId,
-	core::{crypto::KeyTypeId, OpaqueMetadata},
-	runtime::{
-		traits::{Block as BlockT, NumberFor},
-		transaction_validity::{TransactionSource, TransactionValidity},
-		ApplyExtrinsicResult,
-	},
-	version::RuntimeVersion,
+use frame_support::{
+	genesis_builder_helper::{build_state, get_preset},
+	parameter_types,
 };
+use pallet_grandpa::AuthorityId as GrandpaId;
+use sp_api::impl_runtime_apis;
+use sp_consensus_aura::sr25519::AuthorityId as AuraId;
+use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
+use sp_runtime::{
+	traits::{Block as BlockT, NumberFor},
+	transaction_validity::{TransactionSource, TransactionValidity},
+	ApplyExtrinsicResult,
+};
+use sp_version::RuntimeVersion;
 
-#[frame::support::runtime]
+#[frame_support::runtime]
 mod runtime {
 	#[runtime::runtime]
 	#[runtime::derive(
@@ -66,25 +65,25 @@ mod runtime {
 	pub struct Runtime;
 
 	#[runtime::pallet_index(0)]
-	pub type System = frame::system;
+	pub type System = frame_system;
 
 	#[runtime::pallet_index(2)]
-	pub type Timestamp = pallet::timestamp;
+	pub type Timestamp = pallet_timestamp;
 
 	#[runtime::pallet_index(3)]
-	pub type Balances = pallet::balances;
+	pub type Balances = pallet_balances;
 
 	#[runtime::pallet_index(8)]
-	pub type Aura = pallet::aura;
+	pub type Aura = pallet_aura;
 
 	#[runtime::pallet_index(9)]
-	pub type Grandpa = pallet::grandpa;
+	pub type Grandpa = pallet_grandpa;
 
 	#[runtime::pallet_index(16)]
-	pub type TransactionPayment = pallet::transaction_payment;
+	pub type TransactionPayment = pallet_transaction_payment;
 
 	#[runtime::pallet_index(17)]
-	pub type Sudo = pallet::sudo;
+	pub type Sudo = pallet_sudo;
 }
 
 #[cfg(feature = "runtime-benchmarks")]

@@ -19,16 +19,16 @@
 use crate::*;
 
 pub use noir_core_primitives::*;
-use primitives::runtime::{generic, impl_opaque_keys, MultiAddress};
+use sp_runtime::{generic, MultiAddress};
 
 pub type Address = MultiAddress<AccountId, AccountIndex>;
 
 pub type Block = generic::Block<Header, UncheckedExtrinsic>;
 
-pub type Executive = frame::executive::Executive<
+pub type Executive = frame_executive::Executive<
 	Runtime,
 	Block,
-	frame::system::ChainContext<Runtime>,
+	frame_system::ChainContext<Runtime>,
 	Runtime,
 	AllPalletsWithSystem,
 	Migrations,
@@ -39,14 +39,14 @@ pub type Header = generic::Header<BlockNumber, BlakeTwo256>;
 pub type Migrations = ();
 
 pub type SignedExtra = (
-	frame::system::CheckNonZeroSender<Runtime>,
-	frame::system::CheckSpecVersion<Runtime>,
-	frame::system::CheckTxVersion<Runtime>,
-	frame::system::CheckGenesis<Runtime>,
-	frame::system::CheckMortality<Runtime>,
-	frame::system::CheckNonce<Runtime>,
-	frame::system::CheckWeight<Runtime>,
-	pallet::transaction_payment::ChargeTransactionPayment<Runtime>,
+	frame_system::CheckNonZeroSender<Runtime>,
+	frame_system::CheckSpecVersion<Runtime>,
+	frame_system::CheckTxVersion<Runtime>,
+	frame_system::CheckGenesis<Runtime>,
+	frame_system::CheckMortality<Runtime>,
+	frame_system::CheckNonce<Runtime>,
+	frame_system::CheckWeight<Runtime>,
+	pallet_transaction_payment::ChargeTransactionPayment<Runtime>,
 );
 
 pub type SignedPayload = generic::SignedPayload<RuntimeCall, SignedExtra>;
@@ -54,11 +54,12 @@ pub type SignedPayload = generic::SignedPayload<RuntimeCall, SignedExtra>;
 pub type UncheckedExtrinsic =
 	generic::UncheckedExtrinsic<Address, RuntimeCall, Signature, SignedExtra>;
 
-pub use frame::system::Call as SystemCall;
-pub use pallet::balances::Call as BalancesCall;
+pub use frame_system::Call as SystemCall;
+pub use pallet_balances::Call as BalancesCall;
 
 pub mod opaque {
 	use super::*;
+	use sp_runtime::impl_opaque_keys;
 
 	impl_opaque_keys! {
 		pub struct SessionKeys {

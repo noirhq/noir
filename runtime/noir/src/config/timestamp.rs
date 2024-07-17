@@ -24,9 +24,9 @@ parameter_types! {
 	pub const MinimumPeriod: Moment = MINIMUM_PERIOD;
 }
 
-impl pallet::timestamp::Config for Runtime {
+impl pallet_timestamp::Config for Runtime {
 	type MinimumPeriod = MinimumPeriod;
 	type Moment = Moment;
 	type OnTimestampSet = Aura;
-	type WeightInfo = pallet::timestamp::weights::SubstrateWeight<Self>;
+	type WeightInfo = pallet_timestamp::weights::SubstrateWeight<Self>;
 }

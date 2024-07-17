@@ -18,9 +18,10 @@
 
 use crate::*;
 
+use sp_runtime::create_runtime_str;
+use sp_version::runtime_version;
 #[cfg(feature = "std")]
-use primitives::version::NativeVersion;
-use primitives::{runtime::create_runtime_str, version::runtime_version};
+use sp_version::NativeVersion;
 
 #[runtime_version]
 pub const VERSION: RuntimeVersion = RuntimeVersion {
@@ -28,7 +29,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	impl_name: create_runtime_str!("noir"),
 	authoring_version: 1,
 	// spec_version: MAJOR_MINOR_PATCH
-	spec_version: 000_004_000,
+	spec_version: 4_000,
 	impl_version: 1,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 1,

@@ -19,7 +19,7 @@
 use crate::*;
 
 use noir_runtime_common::units::CENTS;
-use primitives::runtime::traits::ConstU32;
+use sp_runtime::traits::ConstU32;
 
 pub const EXISTENTIAL_DEPOSIT: Balance = 1 * CENTS;
 
@@ -27,7 +27,7 @@ parameter_types! {
 	pub const ExistentialDeposit: Balance = EXISTENTIAL_DEPOSIT;
 }
 
-impl pallet::balances::Config for Runtime {
+impl pallet_balances::Config for Runtime {
 	type AccountStore = System;
 	type Balance = Balance;
 	type DustRemoval = ();
@@ -40,5 +40,5 @@ impl pallet::balances::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type RuntimeFreezeReason = RuntimeFreezeReason;
 	type RuntimeHoldReason = RuntimeHoldReason;
-	type WeightInfo = pallet::balances::weights::SubstrateWeight<Self>;
+	type WeightInfo = pallet_balances::weights::SubstrateWeight<Self>;
 }

@@ -18,11 +18,11 @@
 
 use crate::*;
 
-use primitives::runtime::traits::{ConstU32, ConstU64};
+use sp_runtime::traits::{ConstU32, ConstU64};
 
-impl pallet::grandpa::Config for Runtime {
+impl pallet_grandpa::Config for Runtime {
 	type EquivocationReportSystem = ();
-	type KeyOwnerProof = primitives::core::Void;
+	type KeyOwnerProof = sp_core::Void;
 	type MaxAuthorities = ConstU32<32>;
 	type MaxNominators = ConstU32<0>;
 	type MaxSetIdSessionEntries = ConstU64<0>;

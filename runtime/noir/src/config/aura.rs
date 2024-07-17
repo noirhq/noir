@@ -19,14 +19,14 @@
 use crate::*;
 
 use noir_runtime_common::units::SECONDS;
-use primitives::runtime::traits::{ConstBool, ConstU32};
+use sp_runtime::traits::{ConstBool, ConstU32};
 
 pub const SLOT_DURATION: Moment = 6 * SECONDS;
 
-impl pallet::aura::Config for Runtime {
+impl pallet_aura::Config for Runtime {
 	type AllowMultipleBlocksPerSlot = ConstBool<false>;
 	type AuthorityId = AuraId;
 	type DisabledValidators = ();
 	type MaxAuthorities = ConstU32<32>;
-	type SlotDuration = pallet::aura::MinimumPeriodTimesTwo<Self>;
+	type SlotDuration = pallet_aura::MinimumPeriodTimesTwo<Self>;
 }
