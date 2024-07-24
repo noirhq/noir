@@ -31,7 +31,7 @@ pub use crate::{
 	eth::{db_config_dir, EthConfiguration},
 };
 use futures::{channel::mpsc, prelude::*};
-use noir_core_primitives::Block;
+use noir_core_primitives::opaque::Block;
 use noir_runtime::{Hash, TransactionConverter};
 use prometheus_endpoint::Registry;
 use sc_client_api::{Backend, BlockBackend};

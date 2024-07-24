@@ -23,8 +23,8 @@ mod eth;
 pub use self::eth::{create_eth, overrides_handle, EthDeps};
 use futures::channel::mpsc;
 use jsonrpsee::RpcModule;
-use noir_core_primitives::Block;
-use noir_runtime::{AccountId, Balance, Hash, Nonce};
+use noir_core_primitives::opaque::Block;
+use noir_runtime::{AccountId, AccountNonce, Balance, Hash};
 use sc_client_api::{
 	backend::{Backend, StorageProvider},
 	client::BlockchainEvents,
@@ -60,7 +60,7 @@ where
 	C: CallApiAt<Block> + ProvideRuntimeApi<Block>,
 	C::Api: sp_block_builder::BlockBuilder<Block>,
 	C::Api: sp_consensus_aura::AuraApi<Block, AuraId>,
-	C::Api: substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Nonce>,
+	C::Api: substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, AccountNonce>,
 	C::Api: pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>,
 	C::Api: hp_rpc::ConvertTxRuntimeApi<Block>,
 	C: HeaderBackend<Block> + HeaderMetadata<Block, Error = BlockChainError> + 'static,

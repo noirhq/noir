@@ -1,21 +1,19 @@
 [package]
 name = "noir-core-primitives"
 version = { workspace = true }
-license = "GPL-3.0-or-later"
-
 authors = { workspace = true }
 edition = { workspace = true }
+license = "Apache-2.0"
 repository = { workspace = true }
+publish = false
 
 [dependencies]
+np-core = { workspace = true }
 np-runtime = { workspace = true }
-sp-core = { workspace = true }
-sp-runtime = { workspace = true }
 
 [features]
 default = ["std"]
 std = [
+	"np-core/std",
 	"np-runtime/std",
-	"sp-core/std",
-	"sp-runtime/std",
 ]

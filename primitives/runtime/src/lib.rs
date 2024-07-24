@@ -50,7 +50,7 @@ use sp_std::prelude::*;
 /// Signature verify that can work with any known signature types.
 #[derive(Eq, PartialEq, Clone, Encode, Decode, RuntimeDebug, TypeInfo)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub enum AuthenticationProof {
+pub enum AuthorizationProof {
 	/// A Ed25519 signature.
 	Ed25519(ed25519::Signature),
 	/// A Sr25519 signature.
@@ -63,7 +63,7 @@ pub enum AuthenticationProof {
 	WebAuthn(webauthn::Signature),
 }
 
-impl Verify for AuthenticationProof {
+impl Verify for AuthorizationProof {
 	type Signer = Multikey;
 
 	fn verify<L: Lazy<[u8]>>(&self, mut msg: L, signer: &AccountId32) -> bool {
@@ -106,7 +106,7 @@ impl Verify for AuthenticationProof {
 	}
 }
 
-impl traits::VerifyMut for AuthenticationProof {
+impl traits::VerifyMut for AuthorizationProof {
 	type Signer = Multikey;
 
 	fn verify_mut<L: Lazy<[u8]>>(&self, mut msg: L, signer: &mut AccountId32) -> bool {

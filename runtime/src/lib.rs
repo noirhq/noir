@@ -45,7 +45,7 @@ use frame_support::{
 		IdentityFee, Weight,
 	},
 };
-pub use noir_core_primitives::{AccountId, Balance, BlockNumber, Hash, Nonce, Signature};
+pub use noir_core_primitives::{AccountId, AccountNonce, Balance, BlockNumber, Hash, Signature};
 use np_core::ecdsa::EcdsaExt;
 use pallet_cosmos::handler::cosm::MsgHandler;
 use pallet_ethereum::{
@@ -343,7 +343,7 @@ impl frame_system::Config for Runtime {
 	///
 	type Block = Block;
 	/// The index type for storing how many extrinsics an account has signed.
-	type Nonce = Nonce;
+	type Nonce = AccountNonce;
 	/// The type for hashing blocks and tries.
 	type Hash = Hash;
 	/// The hashing algorithm used.
@@ -956,8 +956,8 @@ impl_runtime_apis! {
 		}
 	}
 
-	impl frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId, Nonce> for Runtime {
-		fn account_nonce(account: AccountId) -> Nonce {
+	impl frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId, AccountNonce> for Runtime {
+		fn account_nonce(account: AccountId) -> AccountNonce {
 			System::account_nonce(account)
 		}
 	}
