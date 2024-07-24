@@ -25,7 +25,7 @@ pub mod weights;
 pub use pallet::*;
 
 use crate::weights::WeightInfo;
-use np_crypto::ecdsa::EcdsaExt;
+use np_core::ecdsa::EcdsaExt;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_runtime::{BoundedBTreeSet, DispatchError};
