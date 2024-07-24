@@ -20,6 +20,8 @@
 #![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
 
+pub use sp_runtime as s_;
+
 mod accountid32;
 /// Generic extrinsic implementation.
 pub mod generic;

@@ -20,6 +20,8 @@
 #![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
 
+pub use sp_core as s_;
+
 pub mod bip32;
 pub mod ecdsa;
 pub mod p256;
