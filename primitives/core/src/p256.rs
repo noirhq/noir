@@ -1,6 +1,6 @@
 // This file is part of Noir.
 
-// Copyright (C) 2023 Haderech Pte. Ltd.
+// Copyright (c) Haderech Pte. Ltd.
 // Copyright (C) 2017-2022 Parity Technologies (UK) Ltd.
 // SPDX-License-Identifier: Apache-2.0
 
