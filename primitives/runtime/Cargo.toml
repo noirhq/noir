@@ -10,6 +10,7 @@ repository = { workspace = true }
 [dependencies]
 array-bytes = { workspace = true, optional = true }
 base64ct = { workspace = true, optional = true }
+buidl = { workspace = true }
 parity-scale-codec = { workspace = true, features = ["derive", "max-encoded-len"] }
 scale-info = { workspace = true, features = ["derive"] }
 serde = { workspace = true, features = ["derive"], optional = true }
@@ -32,6 +33,7 @@ sp-std = { workspace = true }
 default = ["std"]
 std = [
 	"base64ct/std",
+	"buidl/std",
 	"fp-self-contained/std",
 	"frame-support/std",
 	"parity-scale-codec/std",

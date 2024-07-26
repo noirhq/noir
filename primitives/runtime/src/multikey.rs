@@ -17,7 +17,7 @@
 
 //! Interoperable public key representation.
 
-use crate::AccountId32;
+use crate::{traits::Property, AccountId32};
 use np_core::{ecdsa::EcdsaExt, p256};
 use parity_scale_codec::{Decode, Encode, EncodeLike, Error as CodecError, Input, MaxEncodedLen};
 use scale_info::TypeInfo;
@@ -334,7 +334,7 @@ impl TryFrom<AccountId32> for Multikey {
 	type Error = ();
 
 	fn try_from(v: AccountId32) -> Result<Self, Self::Error> {
-		v.source().ok_or(()).cloned()
+		v.get().clone().ok_or(())
 	}
 }
 
