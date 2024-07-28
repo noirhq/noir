@@ -12,6 +12,7 @@ array-bytes = { workspace = true, optional = true }
 base64ct = { workspace = true, optional = true }
 ecdsa = { workspace = true }
 hmac = { workspace = true, optional = true }
+k256 = { workspace = true }
 lazy_static = { workspace = true, optional = true }
 parity-scale-codec = { workspace = true, features = ["derive", "max-encoded-len"] }
 p256 = { workspace = true, features = ["arithmetic"] }
@@ -38,6 +39,7 @@ std = [
 	"base64ct/std",
 	"ecdsa/std",
 	"hmac/std",
+	"k256/std",
 	"lazy_static",
 	"parity-scale-codec/std",
 	"p256/std",

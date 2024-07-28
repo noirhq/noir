@@ -23,9 +23,6 @@
 use np_core::{p256, webauthn};
 use sp_runtime_interface::runtime_interface;
 
-#[cfg(feature = "std")]
-use secp256k1::PublicKey;
-
 /// Interfaces for working with crypto related types from within the runtime.
 #[runtime_interface]
 pub trait Crypto {
@@ -51,19 +48,19 @@ pub trait Crypto {
 
 	/// Decompress secp256k1 public key.
 	fn secp256k1_pubkey_serialize(pubkey: &[u8; 33]) -> Option<[u8; 64]> {
-		let pubkey = PublicKey::from_slice(&pubkey[..]).ok()?;
-		let mut res = [0u8; 64];
-		res.copy_from_slice(&pubkey.serialize_uncompressed()[1..]);
-		Some(res)
+		np_core::ecdsa::secp256k1_pubkey_serialize(pubkey, false)
+			.ok()
+			.map(|k| k.try_into().ok())
+			.flatten()
 	}
 
 	/// Hash with ripemd160.
 	fn ripemd160(msg: &[u8]) -> [u8; 20] {
-		hp_crypto::ripemd160(msg)
+		np_crypto_hashing::ripemd160(msg)
 	}
 
 	/// Verify with secp256k1.
 	fn secp256k1_ecdsa_verify(sig: &[u8], msg: &[u8], pk: &[u8]) -> bool {
-		hp_crypto::secp256k1_ecdsa_verify(sig, msg, pk)
+		np_core::ecdsa::secp256k1_ecdsa_verify(sig, msg, pk)
 	}
 }

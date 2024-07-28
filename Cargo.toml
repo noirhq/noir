@@ -30,6 +30,7 @@ ethereum = { version = "0.15.0", default-features = false, features = ["with-cod
 futures = { version = "0.3.26", features = ["thread-pool"] }
 hmac = { version = "0.12.1", default-features = false }
 jsonrpsee = { version = "0.22.5", features = ["server"] }
+k256 = { version = "0.13.3", default-features = false, features = ["ecdsa", "alloc"] }
 lazy_static = { version = "1.4.0", default-features = false }
 log = "0.4.17"
 parity-scale-codec = { version = "3.4.0", default-features = false, features = ["derive"] }
@@ -143,7 +144,6 @@ pallet-evm-precompile-simple = { git = "https://github.com/polkadot-evm/frontier
 
 # horizon
 hc-rpc = { git = "https://github.com/noirhq/horizon", branch = "polkadot-v1.9.0" }
-hp-crypto = { git = "https://github.com/noirhq/horizon", branch = "polkadot-v1.9.0", default-features = false }
 hp-rpc = { git = "https://github.com/noirhq/horizon", branch = "polkadot-v1.9.0", default-features = false }
 hp-cosmos = { git = "https://github.com/noirhq/horizon", branch = "polkadot-v1.9.0", default-features = false }
 pallet-cosmos = { git = "https://github.com/noirhq/horizon", branch = "polkadot-v1.9.0", default-features = false }
