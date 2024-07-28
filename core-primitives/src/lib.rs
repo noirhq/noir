@@ -60,10 +60,3 @@ pub mod opaque {
 	/// Opaque extrinsic.
 	pub type UncheckedExtrinsic = OpaqueExtrinsic;
 }
-
-/// Basic currency unit.
-pub const DOLLARS: Balance = 1_000_000_000_000_000_000;
-/// Decimals of currency.
-pub const DECIMALS: u8 = 18;
-/// Symbol of currency.
-pub const SYMBOL: &str = "CDT";

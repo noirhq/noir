@@ -16,8 +16,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-use noir_core_primitives::{DECIMALS, DOLLARS, SYMBOL};
-use noir_runtime::{AccountId, RuntimeGenesisConfig, Signature, WASM_BINARY};
+use noir_runtime::{
+	prelude::{DECIMALS, SYMBOL},
+	AccountId, RuntimeGenesisConfig, Signature, WASM_BINARY,
+};
+use noir_runtime_common::units::DOLLARS;
 use sc_chain_spec::Properties;
 use sc_service::ChainType;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;

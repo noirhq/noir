@@ -26,6 +26,8 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+pub mod prelude;
+
 mod compat;
 use compat::ethereum::TransactionExt;
 mod precompiles;

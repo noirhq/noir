@@ -41,6 +41,7 @@ fp-rpc = { workspace = true }
 # noir
 noir-core-primitives = { workspace = true }
 noir-runtime = { workspace = true }
+noir-runtime-common = { workspace = true }
 np-io = { workspace = true }
 
 # substrate
