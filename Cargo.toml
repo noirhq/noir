@@ -6,6 +6,7 @@ members = [
 	"frame/alias",
 	"node/noir",
 	"primitives/core",
+	"primitives/crypto/hashing",
 	"primitives/io",
 	"primitives/runtime",
 	"runtime/common",
@@ -50,6 +51,7 @@ noir-core-primitives = { path = "core-primitives", default-features = false }
 noir-runtime = { path = "runtime/noir", default-features = false }
 noir-runtime-common = { path = "runtime/common", default-features = false }
 np-core = { path = "primitives/core", default-features = false }
+np-crypto-hashing = { path = "primitives/crypto/hashing", default-features = false }
 np-io = { path = "primitives/io", default-features = false }
 np-runtime = { path = "primitives/runtime", default-features = false }
 pallet-alias = { path = "frame/alias", default-features = false }
